@@ -86,9 +86,19 @@ class TrainDataProvider(object):
 
     def get_val_iter(self, batch_size, shuffle=True):
         val_examples = self.val.examples[:]
+
         if shuffle:
             np.random.shuffle(val_examples)
         return get_batch_iter(val_examples, batch_size, augment=False)
+
+    def get_val(self, size, shuffle=True):
+        val_examples = self.val.examples[:]
+
+        if shuffle:
+            np.random.shuffle(val_examples)
+
+        val_examples = val_examples[0: size]
+        return np.array(val_examples).astype(np.float32)
 
     def compute_total_batch_num(self, batch_size):
         """Total padded batch num"""

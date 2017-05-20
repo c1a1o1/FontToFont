@@ -281,44 +281,45 @@ class Font2Font(object):
         return fake_images, real_images, d_loss, g_loss, l1_loss
 
     def validate_model(self, val_iter, epoch, step):
-        images = next(val_iter)
+        # images = next(val_iter)
+        images = val_iter
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
 
         # calculate the average accuracy
-        img_shape = fake_imgs.shape
-        fake_imgs_reshape = fake_imgs
-        real_imgs_reshape = real_imgs
-
-        fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
-                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
-                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-
-        # threshold
-        threshold = 0.0
-        for bt in range(fake_imgs_reshape.shape[0]):
-            for it in range(fake_imgs_reshape.shape[1]):
-                if fake_imgs_reshape[bt][it] >= threshold:
-                    fake_imgs_reshape[bt][it] = 1.0
-                else:
-                    fake_imgs_reshape[bt][it] = -1.0
-
-        accuracy = 0.0
-        for bt in range(fake_imgs_reshape.shape[0]):
-            over = 0.0
-            less = 0.0
-            base = 0.0
-            for it in range(fake_imgs_reshape.shape[1]):
-                if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-                    over += 1
-                if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-                    less += 1
-                if real_imgs_reshape[bt][it] != 1.0:
-                    base += 1
-            accuracy += 1 - ((over + less) / base)
-        accuracy = accuracy / fake_imgs_reshape.shape[0]
-        print("accuracy:{}".format(accuracy))
+        # img_shape = fake_imgs.shape
+        # fake_imgs_reshape = fake_imgs
+        # real_imgs_reshape = real_imgs
+        #
+        # fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
+        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        # real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
+        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        #
+        # # threshold
+        # threshold = 0.0
+        # for bt in range(fake_imgs_reshape.shape[0]):
+        #     for it in range(fake_imgs_reshape.shape[1]):
+        #         if fake_imgs_reshape[bt][it] >= threshold:
+        #             fake_imgs_reshape[bt][it] = 1.0
+        #         else:
+        #             fake_imgs_reshape[bt][it] = -1.0
+        #
+        # accuracy = 0.0
+        # for bt in range(fake_imgs_reshape.shape[0]):
+        #     over = 0.0
+        #     less = 0.0
+        #     base = 0.0
+        #     for it in range(fake_imgs_reshape.shape[1]):
+        #         if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
+        #             over += 1
+        #         if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
+        #             less += 1
+        #         if real_imgs_reshape[bt][it] != 1.0:
+        #             base += 1
+        #     accuracy += 1 - ((over + less) / base)
+        # accuracy = accuracy / fake_imgs_reshape.shape[0]
+        # print("accuracy:{}".format(accuracy))
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -385,7 +386,7 @@ class Font2Font(object):
         # filter by one type of labels
         data_provider = TrainDataProvider(self.data_dir)
         total_batches = data_provider.compute_total_batch_num(self.batch_size)
-        val_batch_iter = data_provider.get_val_iter(self.batch_size)
+        val_batch_iter = data_provider.get_val(size=self.batch_size)
 
         saver = tf.train.Saver(max_to_keep=3)
         summary_writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
