@@ -280,9 +280,8 @@ class Font2Font(object):
                                                 })
         return fake_images, real_images, d_loss, g_loss, l1_loss
 
-    def validate_model(self, val_iter, epoch, step):
-        # images = next(val_iter)
-        images = val_iter
+    def validate_model(self, images, epoch, step):
+
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
 
