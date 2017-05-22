@@ -95,8 +95,8 @@ class TrainDataProvider(object):
     def get_val(self, size, shuffle=True):
         val_examples = self.val.examples[:]
 
-        if shuffle:
-            np.random.shuffle(val_examples)
+        # if shuffle:
+        #     np.random.shuffle(val_examples)
 
         val_examples = val_examples[0: size]
 
