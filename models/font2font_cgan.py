@@ -424,14 +424,12 @@ class Font2Font(object):
                 counter += 1
                 batch_images = batch
                 # Optimize D
-                for _ in range(3):
-                    _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
-                                                                summary_handle.d_merged],
-                                                               feed_dict={
-                                                                   real_data: batch_images,
-                                                                   learning_rate: current_lr
 
-                                                               })
+                _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                                                            summary_handle.d_merged],
+                                                           feed_dict={real_data: batch_images,
+                                                                      learning_rate: current_lr
+                                                                      })
                 # Optimize G
                 _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
                                                 feed_dict={
