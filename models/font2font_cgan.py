@@ -131,12 +131,17 @@ class Font2Font(object):
                                   is_training, scope="d_bn_1"))
             h2 = lrelu(batch_norm(conv2d(h1, self.discriminator_dim * 4, scope="d_h2_conv"),
                                   is_training, scope="d_bn_2"))
-            h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h3_conv"),
+            h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, scope="d_h3_conv"),
+                                  is_training, scope="d_bn_3"))
+            h4 = lrelu(batch_norm(conv2d(h3, self.discriminator_dim * 8, scope="d_h4_conv"),
+                                  is_training, scope="d_bn_4"))
+            h5 = lrelu(batch_norm(conv2d(h4, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h3_conv"),
                                   is_training, scope="d_bn_3"))
             # real or fake binary loss
-            fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
+            fc1 = fc(tf.reshape(h5, [self.batch_size, -1]), 8, scope="d_fc1")
+            fc2 = fc(fc1, 1, scope="d_fc2")
 
-            return tf.nn.sigmoid(fc1), fc1
+            return tf.nn.sigmoid(fc2), fc2
 
     def build_model(self, is_training=True):
         real_data = tf.placeholder(tf.float32,
@@ -285,40 +290,8 @@ class Font2Font(object):
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
 
-        # calculate the average accuracy
-        # img_shape = fake_imgs.shape
-        # fake_imgs_reshape = fake_imgs
-        # real_imgs_reshape = real_imgs
-        #
-        # fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
-        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        # real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
-        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        #
-        # # threshold
-        # threshold = 0.0
-        # for bt in range(fake_imgs_reshape.shape[0]):
-        #     for it in range(fake_imgs_reshape.shape[1]):
-        #         if fake_imgs_reshape[bt][it] >= threshold:
-        #             fake_imgs_reshape[bt][it] = 1.0
-        #         else:
-        #             fake_imgs_reshape[bt][it] = -1.0
-        #
-        # accuracy = 0.0
-        # for bt in range(fake_imgs_reshape.shape[0]):
-        #     over = 0.0
-        #     less = 0.0
-        #     base = 0.0
-        #     for it in range(fake_imgs_reshape.shape[1]):
-        #         if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-        #             over += 1
-        #         if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-        #             less += 1
-        #         if real_imgs_reshape[bt][it] != 1.0:
-        #             base += 1
-        #     accuracy += 1 - ((over + less) / base)
-        # accuracy = accuracy / fake_imgs_reshape.shape[0]
-        # print("accuracy:{}".format(accuracy))
+        accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
+        print("Sample accuracy: %.5f" % accuracy)
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -332,6 +305,45 @@ class Font2Font(object):
 
         sample_img_path = os.path.join(model_sample_dir, "sample_%02d_%04d.png" % (epoch, step))
         misc.imsave(sample_img_path, merged_pair)
+
+    def calcul_accuracy(self, fake, real):
+        # calculate the average accuracy
+        img_shape = fake.shape
+        fake_imgs_reshape = fake
+        real_imgs_reshape = real
+
+        fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
+                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
+                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        #
+        # threshold
+        threshold = 0.0
+
+        for bt in range(fake_imgs_reshape.shape[0]):
+            for it in range(fake_imgs_reshape.shape[1]):
+                if fake_imgs_reshape[bt][it] >= threshold:
+                    fake_imgs_reshape[bt][it] = 1.0
+                else:
+                    fake_imgs_reshape[bt][it] = -1.0
+
+        accuracy = 0.0
+        imgs_diff = fake_imgs_reshape - real_imgs_reshape
+
+        for bt in range(fake_imgs_reshape.shape[0]):
+            over = 0.0
+            less = 0.0
+            base = 0.0
+            for it in range(fake_imgs_reshape.shape[1]):
+                if imgs_diff[bt][it] == 2.0:
+                    less += 1
+                if imgs_diff[bt][it] == -2.0:
+                    over += 1
+                if real_imgs_reshape[bt][it] == -1.0:
+                    base += 1
+            accuracy += 1 - ((over + less) / base)
+        accuracy = accuracy / fake_imgs_reshape.shape[0]
+        return accuracy
 
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
         saver = tf.train.Saver()
@@ -412,13 +424,14 @@ class Font2Font(object):
                 counter += 1
                 batch_images = batch
                 # Optimize D
-                _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
-                                                            summary_handle.d_merged],
-                                                           feed_dict={
-                                                               real_data: batch_images,
-                                                               learning_rate: current_lr
+                for _ in range(5):
+                    _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                                                                summary_handle.d_merged],
+                                                               feed_dict={
+                                                                   real_data: batch_images,
+                                                                   learning_rate: current_lr
 
-                                                           })
+                                                               })
                 # Optimize G
                 _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
                                                 feed_dict={
