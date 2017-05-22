@@ -135,8 +135,8 @@ class Font2Font(object):
                                   is_training, scope="d_bn_3"))
             h4 = lrelu(batch_norm(conv2d(h3, self.discriminator_dim * 8, scope="d_h4_conv"),
                                   is_training, scope="d_bn_4"))
-            h5 = lrelu(batch_norm(conv2d(h4, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h3_conv"),
-                                  is_training, scope="d_bn_3"))
+            h5 = lrelu(batch_norm(conv2d(h4, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h5_conv"),
+                                  is_training, scope="d_bn_5"))
             # real or fake binary loss
             fc1 = fc(tf.reshape(h5, [self.batch_size, -1]), 8, scope="d_fc1")
             fc2 = fc(fc1, 1, scope="d_fc2")
