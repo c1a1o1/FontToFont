@@ -133,15 +133,10 @@ class Font2Font(object):
                                   is_training, scope="d_bn_2"))
             h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, scope="d_h3_conv"),
                                   is_training, scope="d_bn_3"))
-            # h4 = lrelu(batch_norm(conv2d(h3, self.discriminator_dim * 8, scope="d_h4_conv"),
-            #                       is_training, scope="d_bn_4"))
-            # h5 = lrelu(batch_norm(conv2d(h4, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h5_conv"),
-            #                       is_training, scope="d_bn_5"))
             # real or fake binary loss
-            fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 8, scope="d_fc1")
-            fc2 = fc(fc1, 1, scope="d_fc2")
+            fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
 
-            return tf.nn.sigmoid(fc2), fc2
+            return tf.nn.sigmoid(fc1), fc1
 
     def build_model(self, is_training=True):
         real_data = tf.placeholder(tf.float32,
@@ -306,6 +301,13 @@ class Font2Font(object):
         sample_img_path = os.path.join(model_sample_dir, "sample_%02d_%04d.png" % (epoch, step))
         misc.imsave(sample_img_path, merged_pair)
 
+    def validate_last_model(self, images):
+        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
+        print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
+
+        accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
+        print("Sample accuracy: %.5f" % accuracy)
+
     def calcul_accuracy(self, fake, real):
         # calculate the average accuracy
         img_shape = fake.shape
@@ -389,11 +391,11 @@ class Font2Font(object):
             raise Exception("no session registered")
 
         learning_rate = tf.placeholder(tf.float32, name="learning_rate")
-        # d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
-        # g_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.g_loss, var_list=g_vars)
+        d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
+        g_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.g_loss, var_list=g_vars)
 
-        d_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.d_loss, var_list=d_vars)
-        g_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.g_loss, var_list=g_vars)
+        # d_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.d_loss, var_list=d_vars)
+        # g_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.g_loss, var_list=g_vars)
 
         tf.global_variables_initializer().run()
         real_data = input_handle.real_data
@@ -470,6 +472,13 @@ class Font2Font(object):
                 if counter % checkpoint_steps == 0:
                     print("Checkpoint: save checkpoint step %d" % counter)
                     self.checkpoint(saver, counter)
+
+        # valiation the models
+        all_val_examples = data_provider.get_val(len(data_provider.val.examples))
+        self.validate_last_model(all_val_examples)
+
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
         self.checkpoint(saver, counter)
+
+
