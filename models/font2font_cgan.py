@@ -486,6 +486,7 @@ class Font2Font(object):
         for it in range(iters):
             val_batch_iter = data_provider.get_val(size=self.batch_size)
             accuracy += self.validate_last_model(val_batch_iter)
+            break
         accuracy /= iters
         print("Avg accuracy: %.5f" % accuracy)
 
