@@ -477,8 +477,9 @@ class Font2Font(object):
                     self.checkpoint(saver, counter)
 
         # valiation the models
-        all_val_examples = data_provider.get_val(len(data_provider.val.examples))
-        self.validate_last_model(all_val_examples)
+        # print("val.examples len:{}".format(len(data_provider.val.examples)))
+        # all_val_examples = data_provider.get_val(len(data_provider.val.examples))
+        self.validate_last_model(data_provider.val.examples)
 
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
