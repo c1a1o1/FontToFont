@@ -452,7 +452,7 @@ class Font2Font(object):
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
                 _, batch_g_loss, cheat_loss, \
-                const_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_l1_optimizer,
+                const_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
                                                                          loss_handle.g_loss,
                                                                          loss_handle.cheat_loss,
                                                                          loss_handle.const_loss,
