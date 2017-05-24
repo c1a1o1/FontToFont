@@ -306,8 +306,9 @@ class Font2Font(object):
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
 
-        accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
-        print("Sample accuracy: %.5f" % accuracy)
+        btn_accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
+        print("Sample accuracy: %.5f" % btn_accuracy)
+        return btn_accuracy
 
     def calcul_accuracy(self, fake, real):
         # calculate the average accuracy
@@ -480,8 +481,13 @@ class Font2Font(object):
 
         # valiation the models
         print("val.examples len:{}".format(len(data_provider.val.examples)))
-        all_val_examples = data_provider.get_val(len(data_provider.val.examples))
-        self.validate_last_model(all_val_examples)
+        accuracy = 0.0
+        iters = int(len(data_provider.val.examples) / self.batch_size)
+        for it in range(iters):
+            val_batch_iter = data_provider.get_val(size=self.batch_size)
+            accuracy += self.validate_last_model(val_batch_iter)
+        accuracy /= iters
+        print("Avg accuracy: %.5f" % accuracy)
 
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
