@@ -170,7 +170,8 @@ class Font2Font(object):
         d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
                                                                              labels=tf.zeros_like(fake_D)))
         # L1 loss between real and generated images
-        l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
+        l1_loss = tf.reduce_mean(tf.abs(fake_B - real_B))
+
         # total variation loss
         width = self.output_width
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
@@ -181,7 +182,7 @@ class Font2Font(object):
                                                                             labels=tf.ones_like(fake_D)))
 
         d_loss = d_loss_real + d_loss_fake
-        g_loss = cheat_loss + l1_loss + const_loss + tv_loss
+        g_loss = cheat_loss + self.L1_penalty * l1_loss + const_loss + tv_loss
 
         d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
         d_loss_fake_summary = tf.summary.scalar("d_loss_fake", d_loss_fake)
@@ -318,10 +319,9 @@ class Font2Font(object):
                                        [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
         real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
                                        [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        #
+
         # threshold
         threshold = 0.0
-
         for bt in range(fake_imgs_reshape.shape[0]):
             for it in range(fake_imgs_reshape.shape[1]):
                 if fake_imgs_reshape[bt][it] >= threshold:
@@ -330,21 +330,20 @@ class Font2Font(object):
                     fake_imgs_reshape[bt][it] = -1.0
 
         accuracy = 0.0
-        imgs_diff = fake_imgs_reshape - real_imgs_reshape
-
         for bt in range(fake_imgs_reshape.shape[0]):
             over = 0.0
             less = 0.0
             base = 0.0
             for it in range(fake_imgs_reshape.shape[1]):
-                if imgs_diff[bt][it] == 2.0:
-                    less += 1
-                if imgs_diff[bt][it] == -2.0:
+                if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
                     over += 1
-                if real_imgs_reshape[bt][it] == -1.0:
+                if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
+                    less += 1
+                if real_imgs_reshape[bt][it] != 1.0:
                     base += 1
             accuracy += 1 - ((over + less) / base)
         accuracy = accuracy / fake_imgs_reshape.shape[0]
+        print("accuracy:{}".format(accuracy))
         return accuracy
 
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
@@ -393,9 +392,7 @@ class Font2Font(object):
         learning_rate = tf.placeholder(tf.float32, name="learning_rate")
         d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
         g_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.g_loss, var_list=g_vars)
-
-        # d_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.d_loss, var_list=d_vars)
-        # g_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.g_loss, var_list=g_vars)
+        g_l1_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.l1_loss, var_list=g_vars)
 
         tf.global_variables_initializer().run()
         real_data = input_handle.real_data
@@ -437,11 +434,17 @@ class Font2Font(object):
                                                                       learning_rate: current_lr
                                                                       })
                 # Optimize G
-                _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
-                                                feed_dict={
-                                                    real_data: batch_images,
-                                                    learning_rate: current_lr
-                                                })
+                # _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
+                #                                 feed_dict={
+                #                                     real_data: batch_images,
+                #                                     learning_rate: current_lr
+                #                                 })
+                for _ in range(3):
+                    _, batch_g_l1_loss = self.sess.run([g_l1_optimizer, loss_handle.l1_loss],
+                                                    feed_dict={
+                                                        real_data: batch_images,
+                                                        learning_rate: current_lr
+                                                    })
                 # magic move to Optimize G again
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
