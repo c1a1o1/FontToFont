@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import tensorflow as tf
 import argparse
+from datetime import datetime
 
 from models.font2font_wgan import Font2Font
 
@@ -36,12 +37,14 @@ parser.add_argument('--checkpoint_steps', dest='checkpoint_steps', type=int, def
 parser.add_argument('--clamp', dest='clamp', type=float, default=0.01, help='the clamp value of D net')
 parser.add_argument('--d_iters', dest='d_iters', type=int, default=3, help='number of D net optimize iteration')
 
-
-
 args = parser.parse_args()
 
 
 def main(_):
+    dt = datetime.now()
+    print("Begin time: {}".format(dt.isoformat(timespec='microseconds')))
+
+    print("Args:{}".format(args))
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
 
@@ -57,6 +60,9 @@ def main(_):
                     schedule=args.schedule, freeze_encoder=args.freeze_encoder,
                     sample_steps=args.sample_steps, checkpoint_steps=args.checkpoint_steps,
                     clamp=args.clamp, d_iters=args.d_iters)
+
+    dt = datetime.now()
+    print("Ending time: {}".format(dt.isoformat(timespec='microseconds')))
 
 
 if __name__ == '__main__':

@@ -4,8 +4,11 @@ from __future__ import absolute_import
 
 import tensorflow as tf
 import argparse
+from datetime import datetime
 
 from models.font2font_cgan import Font2Font
+
+
 
 parser = argparse.ArgumentParser(description='Train')
 parser.add_argument('--experiment_dir', dest='experiment_dir', required=True,
@@ -38,6 +41,11 @@ args = parser.parse_args()
 
 
 def main(_):
+    dt = datetime.now()
+    print("Begin time: {}".format(dt.isoformat(timespec='microseconds')))
+
+    print("Args:{}".format(args))
+
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
 
@@ -53,6 +61,8 @@ def main(_):
                     schedule=args.schedule, freeze_encoder=args.freeze_encoder,
                     sample_steps=args.sample_steps, checkpoint_steps=args.checkpoint_steps)
 
+    dt = datetime.now()
+    print("Ending time: {}".format(dt.isoformat(timespec='microseconds')))
 
 if __name__ == '__main__':
     tf.app.run()
