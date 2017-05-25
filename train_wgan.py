@@ -34,7 +34,7 @@ parser.add_argument('--sample_steps', dest='sample_steps', type=int, default=10,
                     help='number of batches in between two samples are drawn from validation set')
 parser.add_argument('--checkpoint_steps', dest='checkpoint_steps', type=int, default=500,
                     help='number of batches in between two checkpoints')
-parser.add_argument('--clamp', dest='clamp', type=float, default=0.01, help='the clamp value of D net')
+parser.add_argument('--clamp', dest='clamp', type=float, default=0.001, help='the clamp value of D net')
 parser.add_argument('--d_iters', dest='d_iters', type=int, default=3, help='number of D net optimize iteration')
 
 args = parser.parse_args()
@@ -42,7 +42,7 @@ args = parser.parse_args()
 
 def main(_):
     dt = datetime.now()
-    print("Begin time: {}".format(dt.isoformat(timespec='microseconds')))
+    print("Begin time: {}".format(dt.isoformat(timespec='seconds')))
 
     print("Args:{}".format(args))
     config = tf.ConfigProto()
@@ -62,7 +62,7 @@ def main(_):
                     clamp=args.clamp, d_iters=args.d_iters)
 
     dt = datetime.now()
-    print("Ending time: {}".format(dt.isoformat(timespec='microseconds')))
+    print("Ending time: {}".format(dt.isoformat(timespec='seconds')))
 
 
 if __name__ == '__main__':

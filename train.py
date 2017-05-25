@@ -8,8 +8,6 @@ from datetime import datetime
 
 from models.font2font_cgan import Font2Font
 
-
-
 parser = argparse.ArgumentParser(description='Train')
 parser.add_argument('--experiment_dir', dest='experiment_dir', required=True,
                     help='experiment directory, data, samples,checkpoints,etc')
@@ -42,7 +40,7 @@ args = parser.parse_args()
 
 def main(_):
     dt = datetime.now()
-    print("Begin time: {}".format(dt.isoformat(timespec='microseconds')))
+    print("Begin time: {}".format(dt.isoformat(timespec='seconds')))
 
     print("Args:{}".format(args))
 
@@ -62,7 +60,7 @@ def main(_):
                     sample_steps=args.sample_steps, checkpoint_steps=args.checkpoint_steps)
 
     dt = datetime.now()
-    print("Ending time: {}".format(dt.isoformat(timespec='microseconds')))
+    print("Ending time: {}".format(dt.isoformat(timespec='seconds')))
 
 if __name__ == '__main__':
     tf.app.run()

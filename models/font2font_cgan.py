@@ -321,6 +321,8 @@ class Font2Font(object):
         real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
                                        [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
 
+        print("fake[0]:{}".format(fake_imgs_reshape[0]))
+
         # threshold
         threshold = 0.0
         for bt in range(fake_imgs_reshape.shape[0]):
@@ -442,13 +444,6 @@ class Font2Font(object):
                                                     real_data: batch_images,
                                                     learning_rate: current_lr
                                                 })
-                # for _ in range(3):
-                #     # no used
-                #     _, batch_g_l1_loss = self.sess.run([g_l1_optimizer, loss_handle.l1_loss],
-                #                                     feed_dict={
-                #                                         real_data: batch_images,
-                #                                         learning_rate: current_lr
-                #                                     })
                 # magic move to Optimize G again
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way

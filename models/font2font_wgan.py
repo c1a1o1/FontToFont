@@ -385,7 +385,7 @@ class Font2Font(object):
             save_imgs(batch_buffer, count)
 
     def train(self, lr=0.0002, epoch=100, schedule=10, resume=True,
-              freeze_encoder=False, sample_steps=50, checkpoint_steps=500, clamp=0.01, d_iters=5):
+              freeze_encoder=False, sample_steps=50, checkpoint_steps=500, clamp=0.001, d_iters=3):
         g_vars, d_vars = self.retrieve_trainable_vars(freeze_encoder=freeze_encoder)
         input_handle, loss_handle, _, summary_handle = self.retrieve_handles()
 
