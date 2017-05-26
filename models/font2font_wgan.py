@@ -155,8 +155,8 @@ class Font2Font(object):
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
-        real_D_logits = self.discriminator(real_B, is_training=is_training, reuse=False)
-        fake_D_logits = self.discriminator(fake_B, is_training=is_training, reuse=True)
+        real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
+        fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
@@ -165,7 +165,8 @@ class Font2Font(object):
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
 
         # binary real/fake loss
-        d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
+        # d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
+        d_loss_real = tf.reduce_mean(real_D_logits)
         d_loss_fake = tf.reduce_mean(fake_D_logits)
 
         # d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
@@ -183,7 +184,7 @@ class Font2Font(object):
         # cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
         #                                                                     labels=tf.ones_like(fake_D)))
 
-        d_loss = d_loss_real + d_loss_fake
+        d_loss = d_loss_real - d_loss_fake
         g_loss = l1_loss + const_loss + tv_loss
 
         d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
