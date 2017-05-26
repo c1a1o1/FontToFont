@@ -135,6 +135,7 @@ class Font2Font(object):
                                   is_training, scope="d_bn_3"))
             # real or fake binary loss
             fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
+            fc1 = tf.nn.sigmoid(fc1)
 
             return fc1
 
@@ -165,14 +166,9 @@ class Font2Font(object):
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
 
         # binary real/fake loss
-        # d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
-        d_loss_real = tf.reduce_mean(real_D_logits)
+        d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
         d_loss_fake = tf.reduce_mean(fake_D_logits)
 
-        # d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
-        #                                                                      labels=tf.ones_like(real_D)))
-        # d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-        #                                                                      labels=tf.zeros_like(fake_D)))
         # L1 loss between real and generated images
         l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
         # total variation loss
@@ -180,16 +176,11 @@ class Font2Font(object):
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
-        # maximize the chance generator fool the discriminator
-        # cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-        #                                                                     labels=tf.ones_like(fake_D)))
-
-        d_loss = d_loss_real - d_loss_fake
+        d_loss = d_loss_real + d_loss_fake
         g_loss = l1_loss + const_loss + tv_loss
 
         d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
         d_loss_fake_summary = tf.summary.scalar("d_loss_fake", d_loss_fake)
-        # cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
 
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
