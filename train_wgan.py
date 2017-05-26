@@ -27,7 +27,6 @@ parser.add_argument('--schedule', dest='schedule', type=int, default=10, help='n
 parser.add_argument('--resume', dest='resume', type=int, default=1, help='resume from previous training')
 parser.add_argument('--freeze_encoder', dest='freeze_encoder', type=int, default=0,
                     help="freeze encoder weights during training")
-
 parser.add_argument('--inst_norm', dest='inst_norm', type=int, default=0,
                     help='use conditional instance normalization in your model')
 parser.add_argument('--sample_steps', dest='sample_steps', type=int, default=10,

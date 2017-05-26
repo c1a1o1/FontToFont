@@ -127,15 +127,11 @@ class Font2Font(object):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
             h0 = lrelu(conv2d(image, self.discriminator_dim, scope="d_h0_conv"))
-            h1 = lrelu(batch_norm(conv2d(h0, self.discriminator_dim * 2, scope="d_h1_conv"),
-                                  is_training, scope="d_bn_1"))
-            h2 = lrelu(batch_norm(conv2d(h1, self.discriminator_dim * 4, scope="d_h2_conv"),
-                                  is_training, scope="d_bn_2"))
-            h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, scope="d_h3_conv"),
-                                  is_training, scope="d_bn_3"))
+            h1 = lrelu(batch_norm(conv2d(h0, self.discriminator_dim * 2, scope="d_h1_conv"), is_training, scope="d_bn_1"))
+            h2 = lrelu(batch_norm(conv2d(h1, self.discriminator_dim * 4, scope="d_h2_conv"), is_training, scope="d_bn_2"))
+            h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, scope="d_h3_conv"), is_training, scope="d_bn_3"))
             # real or fake binary loss
             fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
-            fc1 = tf.nn.sigmoid(fc1)
 
             return fc1
 
