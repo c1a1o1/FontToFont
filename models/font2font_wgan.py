@@ -14,7 +14,7 @@ from util.uitls import scale_back, merge, save_concat_images
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
-LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "tv_loss"])
+LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "d_loss_real", "d_loss_fake", "const_loss", "l1_loss", "tv_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -167,7 +167,6 @@ class Font2Font(object):
         # binary real/fake loss
         d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
         d_loss_fake = tf.reduce_mean(fake_D_logits)
-        print("d_loss_real: %.7f  d_loss_fake: %.7f" % (d_loss_real, d_loss_fake))
 
         # d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
         #                                                                      labels=tf.ones_like(real_D)))
@@ -204,7 +203,7 @@ class Font2Font(object):
         # expose useful nodes in the graph as handles globally
         input_handle = InputHandle(real_data=real_data)
 
-        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, l1_loss=l1_loss,
+        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake ,const_loss=const_loss, l1_loss=l1_loss,
                                  tv_loss=tv_loss)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
@@ -437,7 +436,9 @@ class Font2Font(object):
                 # Optimize D
                 self.sess.run(cap_d_vars_ops)
 
-                _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                _, batch_d_loss, d_loss_real, d_loss_fake, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                                                                                      loss_handle.d_loss_real,
+                                                                                      loss_handle.d_loss_fake,
                                                             summary_handle.d_merged],
                                                            feed_dict={real_data: batch_images,
                                                                       learning_rate: current_lr
@@ -464,9 +465,9 @@ class Font2Font(object):
                                                                         })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
-                             "const_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
+                             "const_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f, d_loss_real: %.7f, d_loss_fake: %.7f"
                 print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss,
-                                     const_loss, l1_loss, tv_loss))
+                                     const_loss, l1_loss, tv_loss, d_loss_real, d_loss_fake))
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
