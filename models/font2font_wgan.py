@@ -162,11 +162,12 @@ class Font2Font(object):
         # this loss assume that generated imaged and real image
         # should reside in the same space and close to each other
         encoded_fake_B = self.encoder(fake_B, is_training, reuse=True)[0]
-        const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
+        const_loss = (tf.reduce_mean(tf.square(encoded_gireal_A - encoded_fake_B))) * self.Lconst_penalty
 
         # binary real/fake loss
         d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
         d_loss_fake = tf.reduce_mean(fake_D_logits)
+        print("d_loss_real: %.7f  d_loss_fake: %.7f" % (d_loss_real, d_loss_fake))
 
         # d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
         #                                                                      labels=tf.ones_like(real_D)))
