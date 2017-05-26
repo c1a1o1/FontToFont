@@ -155,8 +155,8 @@ class Font2Font(object):
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
-        real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
-        fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+        real_D_logits = self.discriminator(real_B, is_training=is_training, reuse=False)
+        fake_D_logits = self.discriminator(fake_B, is_training=is_training, reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
