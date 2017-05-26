@@ -376,8 +376,8 @@ class Font2Font(object):
             # last batch
             save_imgs(batch_buffer, count)
 
-    def train(self, lr=0.0002, epoch=100, schedule=10, resume=True,
-              freeze_encoder=False, sample_steps=50, checkpoint_steps=500, clamp=0.001, d_iters=3):
+    def train(self, lr=0.0002, epoch=100, schedule=10, resume=True, freeze_encoder=False, sample_steps=50,
+              checkpoint_steps=500, clamp=0.001, d_iters=3):
         g_vars, d_vars = self.retrieve_trainable_vars(freeze_encoder=freeze_encoder)
         input_handle, loss_handle, _, summary_handle = self.retrieve_handles()
 
@@ -385,8 +385,6 @@ class Font2Font(object):
             raise Exception("no session registered")
 
         learning_rate = tf.placeholder(tf.float32, name="learning_rate")
-        # d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
-        # g_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.g_loss, var_list=g_vars)
 
         d_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.d_loss, var_list=d_vars)
         g_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss_handle.g_loss, var_list=g_vars)
@@ -394,6 +392,7 @@ class Font2Font(object):
         cap_d_vars_ops = [val.assign(tf.clip_by_value(val, -clamp, clamp)) for val in d_vars]
 
         tf.global_variables_initializer().run()
+
         real_data = input_handle.real_data
 
         # filter by one type of labels
