@@ -322,6 +322,8 @@ class Font2Font(object):
                                        [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
 
         print("fake[0]:{}".format(fake_imgs_reshape[0]))
+        print("fake min:{}".format(np.amin(fake_imgs_reshape[0])))
+        print("fake max:{}".format(np.amax(fake_imgs_reshape[0])))
 
         # threshold
         threshold = 0.0
@@ -397,7 +399,6 @@ class Font2Font(object):
         learning_rate = tf.placeholder(tf.float32, name="learning_rate")
         d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
         g_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.g_loss, var_list=g_vars)
-        g_l1_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.l1_loss, var_list=g_vars)
 
         tf.global_variables_initializer().run()
         real_data = input_handle.real_data
