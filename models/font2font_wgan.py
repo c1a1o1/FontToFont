@@ -191,8 +191,8 @@ class Font2Font(object):
         # expose useful nodes in the graph as handles globally
         input_handle = InputHandle(real_data=real_data)
 
-        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake ,const_loss=const_loss, l1_loss=l1_loss,
-                                 tv_loss=tv_loss)
+        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake,
+                                 const_loss=const_loss, l1_loss=l1_loss, tv_loss=tv_loss)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 
