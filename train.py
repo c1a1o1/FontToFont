@@ -39,8 +39,8 @@ args = parser.parse_args()
 
 
 def main(_):
-    dt = datetime.now()
-    print("Begin time: {}".format(dt.isoformat(timespec='seconds')))
+    start = datetime.now()
+    print("Begin time: {}".format(start.isoformat(timespec='seconds')))
 
     print("Args:{}".format(args))
 
@@ -59,8 +59,10 @@ def main(_):
                     schedule=args.schedule, freeze_encoder=args.freeze_encoder,
                     sample_steps=args.sample_steps, checkpoint_steps=args.checkpoint_steps)
 
-    dt = datetime.now()
-    print("Ending time: {}".format(dt.isoformat(timespec='seconds')))
+    end = datetime.now()
+    print("Ending time: {}".format(end))
+    duration = end - start
+    print("Duration hours: {}".format(duration.total_seconds() / 3600.0))
 
 if __name__ == '__main__':
     tf.app.run()
