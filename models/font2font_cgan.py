@@ -321,9 +321,9 @@ class Font2Font(object):
         real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
                                        [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
 
-        print("fake[0]:{}".format(fake_imgs_reshape[0]))
-        print("fake min:{}".format(np.amin(fake_imgs_reshape[0])))
-        print("fake max:{}".format(np.amax(fake_imgs_reshape[0])))
+        # print("fake[0]:{}".format(fake_imgs_reshape[0]))
+        # print("fake min:{}".format(np.amin(fake_imgs_reshape[0])))
+        # print("fake max:{}".format(np.amax(fake_imgs_reshape[0])))
 
         # threshold
         threshold = 0.0
