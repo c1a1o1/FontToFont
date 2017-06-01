@@ -14,7 +14,8 @@ from util.uitls import scale_back, merge, save_concat_images
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
-LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "d_loss_real", "d_loss_fake", "const_loss", "l1_loss", "tv_loss"])
+LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "d_loss_real", "d_loss_fake", "d_loss_real_generated",
+                                       "const_loss", "l1_loss", "tv_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -146,14 +147,17 @@ class Font2Font(object):
         real_A = real_data[:, :, :, self.input_filters:self.input_filters + self.output_filters]
 
         fake_B, encoded_real_A = self.generator(real_A, is_training=is_training)
+        real_B_generated, _ = self.generator(real_B, is_training=is_training)
 
         real_AB = tf.concat([real_A, real_B], 3)
         fake_AB = tf.concat([real_A, fake_B], 3)
+        real_AB_generated = tf.concat([real_A, real_B_generated], 3)
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
         real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+        real_D_logits_generated = self.discriminator(real_AB_generated, is_training=is_training, reuse=False)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
@@ -164,6 +168,7 @@ class Font2Font(object):
         # binary real/fake loss
         d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
         d_loss_fake = tf.reduce_mean(fake_D_logits)
+        d_loss_real_generated = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits_generated))
 
         # L1 loss between real and generated images
         l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
@@ -172,11 +177,12 @@ class Font2Font(object):
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
-        d_loss = d_loss_real + d_loss_fake
+        d_loss = d_loss_real + d_loss_fake + d_loss_real_generated
         g_loss = l1_loss + const_loss + tv_loss
 
         d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
         d_loss_fake_summary = tf.summary.scalar("d_loss_fake", d_loss_fake)
+        d_loss_real_generated_summary = tf.summary.scalar("d_loss_real_generated", d_loss_real_generated)
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
 
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
@@ -184,7 +190,8 @@ class Font2Font(object):
         g_loss_summary = tf.summary.scalar("g_loss", g_loss)
         tv_loss_summary = tf.summary.scalar("tv_loss", tv_loss)
 
-        d_merged_summary = tf.summary.merge([d_loss_real_summary, d_loss_fake_summary, d_loss_summary])
+        d_merged_summary = tf.summary.merge([d_loss_real_summary, d_loss_fake_summary, d_loss_summary,
+                                             d_loss_real_generated_summary])
         g_merged_summary = tf.summary.merge([l1_loss_summary, const_loss_summary, g_loss_summary,
                                              tv_loss_summary])
 
@@ -192,7 +199,8 @@ class Font2Font(object):
         input_handle = InputHandle(real_data=real_data)
 
         loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake,
-                                 const_loss=const_loss, l1_loss=l1_loss, tv_loss=tv_loss)
+                                 d_loss_real_generated=d_loss_real_generated,const_loss=const_loss, l1_loss=l1_loss,
+                                 tv_loss=tv_loss)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 

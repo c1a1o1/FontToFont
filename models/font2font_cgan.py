@@ -286,8 +286,10 @@ class Font2Font(object):
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
 
-        accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
-        print("Sample accuracy: %.5f" % accuracy)
+        # fake_imgs, real_imgs = self.translation_gravity_center(fake_imgs, real_imgs)
+
+        # accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
+        # print("Sample accuracy: %.5f" % accuracy)
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -306,50 +308,135 @@ class Font2Font(object):
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
 
+        # fake_imgs, real_imgs = self.translation_gravity_center(fake_imgs, real_imgs)
+
         btn_accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
         print("Sample accuracy: %.5f" % btn_accuracy)
         return btn_accuracy
 
     def calcul_accuracy(self, fake, real):
-        # calculate the average accuracy
-        img_shape = fake.shape
-        fake_imgs_reshape = fake
-        real_imgs_reshape = real
 
-        fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
-                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
-                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        real_ = tf.image.rgb_to_grayscale(real)
+        fake_ = tf.image.rgb_to_grayscale(fake)
 
-        # print("fake[0]:{}".format(fake_imgs_reshape[0]))
-        # print("fake min:{}".format(np.amin(fake_imgs_reshape[0])))
-        # print("fake max:{}".format(np.amax(fake_imgs_reshape[0])))
+        print("real_ shape:{} fake_ shape:{}".format(real_.shape, fake_.shape))
 
-        # threshold
         threshold = 0.0
-        for bt in range(fake_imgs_reshape.shape[0]):
-            for it in range(fake_imgs_reshape.shape[1]):
-                if fake_imgs_reshape[bt][it] >= threshold:
-                    fake_imgs_reshape[bt][it] = 1.0
-                else:
-                    fake_imgs_reshape[bt][it] = -1.0
+        assert real_.shape == fake_.shape
+        img_shape = real_.shape  # [batch, h, w, 1]
+        avg_accuracy = 0.0
+        for bt in range(img_shape[0]):
+            base = .0
+            over = .0
+            less = .0
+            for h in range(img_shape[1]):
+                for w in range(img_shape[2]):
+                    if fake_[bt][h][w] < threshold and real_[bt][h][w] < threshold:
+                        base += 1.0
+                    if fake_[bt][h][w] >= threshold and real_[bt][h][w] < threshold:
+                        less += 1.0
+                    if fake_[bt][h][w] < threshold and real_[bt][h][w] >= threshold:
+                        over += 1.0
+            avg_accuracy += 1 - (less + over) / base
 
-        accuracy = 0.0
-        for bt in range(fake_imgs_reshape.shape[0]):
-            over = 0.0
-            less = 0.0
-            base = 0.0
-            for it in range(fake_imgs_reshape.shape[1]):
-                if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-                    over += 1
-                if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-                    less += 1
-                if real_imgs_reshape[bt][it] != 1.0:
-                    base += 1
-            accuracy += 1 - ((over + less) / base)
-        accuracy = accuracy / fake_imgs_reshape.shape[0]
-        print("accuracy:{}".format(accuracy))
-        return accuracy
+        avg_accuracy /= img_shape[0]
+
+        return avg_accuracy
+
+        #
+        #
+        #
+        #
+        # # calculate the average accuracy
+        # img_shape = fake.shape
+        # fake_imgs_reshape = fake
+        # real_imgs_reshape = real
+        #
+        # # translation of gravity center
+        # fake_imgs_reshape, real_imgs_reshape = self.translation_gravity_center(fake_imgs_reshape, real_imgs_reshape)
+        #
+        # fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
+        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        # real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
+        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+        #
+        # # print("fake[0]:{}".format(fake_imgs_reshape[0]))
+        # # print("fake min:{}".format(np.amin(fake_imgs_reshape[0])))
+        # # print("fake max:{}".format(np.amax(fake_imgs_reshape[0])))
+        #
+        # # threshold
+        # threshold = 0.0
+        # for bt in range(fake_imgs_reshape.shape[0]):
+        #     for it in range(fake_imgs_reshape.shape[1]):
+        #         if fake_imgs_reshape[bt][it] >= threshold:
+        #             fake_imgs_reshape[bt][it] = 1.0
+        #         else:
+        #             fake_imgs_reshape[bt][it] = -1.0
+        #
+        # accuracy = 0.0
+        # for bt in range(fake_imgs_reshape.shape[0]):
+        #     over = 0.0
+        #     less = 0.0
+        #     base = 0.0
+        #     for it in range(fake_imgs_reshape.shape[1]):
+        #         if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
+        #             over += 1
+        #         if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
+        #             less += 1
+        #         if real_imgs_reshape[bt][it] != 1.0:
+        #             base += 1
+        #     accuracy += 1 - ((over + less) / base)
+        # accuracy = accuracy / fake_imgs_reshape.shape[0]
+        # print("accuracy:{}".format(accuracy))
+        # return accuracy
+
+    def translation_gravity_center(self, fake, real):
+
+        assert fake.shape == real.shape
+        shape = fake.shape
+
+        fake_ = tf.image.rgb_to_grayscale(fake)
+        real_ = tf.image.rgb_to_grayscale(real)
+
+        for bt in range(shape[0]):
+            # batch_size
+            ROWS = []
+            COLS = []
+            for c in range(shape[1]):
+                for r in range(shape[2]):
+                    if real_[bt][c][r] < 0.0:
+                        ROWS.append(r)
+                        COLS.append(c)
+
+            real_center_c = int(np.mean(COLS))
+            real_center_r = int(np.mean(ROWS))
+
+            ROWS = []
+            COLS = []
+            for c in range(shape[1]):
+                for r in range(shape[2]):
+                    if fake_[bt][c][r] < 0:
+                        ROWS.append(r)
+                        COLS.append(c)
+
+            fake_center_c = int(np.mean(COLS))
+            fake_center_r = int(np.mean(ROWS))
+
+            # translation vector
+            tran_vector_c = fake_center_c - real_center_c
+            tran_vector_r = fake_center_r - real_center_r
+
+            # translation
+            for c in range(shape[1]):
+                if c+tran_vector_c < 0 or c+tran_vector_c > shape[1]:
+                    continue
+                for r in range(shape[2]):
+                    if r+tran_vector_r < 0 or r+tran_vector_r > shape[2]:
+                        continue
+                    if fake[bt][c][r] < 0.0:
+                        fake[bt][c+tran_vector_c][r+tran_vector_r] = fake[bt][c][r]
+
+        return fake, real
 
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
         saver = tf.train.Saver()
