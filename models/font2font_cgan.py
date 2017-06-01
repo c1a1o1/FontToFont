@@ -310,7 +310,7 @@ class Font2Font(object):
 
         # fake_imgs, real_imgs = self.translation_gravity_center(fake_imgs, real_imgs)
 
-        btn_accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
+        btn_accuracy = self.calcul_accuracy(real_imgs, real_imgs)
         print("Sample accuracy: %.5f" % btn_accuracy)
         return btn_accuracy
 
