@@ -148,8 +148,8 @@ class Font2Font(object):
         # source images
         real_A = real_data[:, :, :, self.input_filters:self.input_filters + self.output_filters]
 
-        fake_B, encoded_real_A = self.generator(real_A, is_training=is_training)
-        generated_real_B, _ = self.generator(real_B, is_training=is_training)
+        fake_B, encoded_real_A = self.generator(real_A, is_training=is_training, reuse=False)
+        generated_real_B, _ = self.generator(real_B, is_training=is_training, reuse=True)
 
         real_AB = tf.concat([real_A, real_B], 3)
         fake_AB = tf.concat([real_A, fake_B], 3)
