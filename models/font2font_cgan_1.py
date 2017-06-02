@@ -160,7 +160,7 @@ class Font2Font(object):
         real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
         generated_real_D, generated_real_D_logits = self.discriminator(generated_real_AB, is_training=is_training,
-                                                                       reuse=False)
+                                                                       reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
