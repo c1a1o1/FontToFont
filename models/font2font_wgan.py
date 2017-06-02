@@ -480,3 +480,6 @@ class Font2Font(object):
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
         self.checkpoint(saver, counter)
+
+    def test(self):
+        pass

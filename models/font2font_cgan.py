@@ -578,4 +578,69 @@ class Font2Font(object):
         print("Checkpoint: last checkpoint step %d" % counter)
         self.checkpoint(saver, counter)
 
+    def test(self, source_provider, model_dir, save_dir):
+        source_len = len(source_provider.data.examples)
+
+        source_iter = source_provider.get_iter(source_len)
+
+        tf.global_variables_initializer().run()
+
+        saver = tf.train.Saver(var_list=self.retrieve_generator_vars())
+        self.restore_model(saver, model_dir)
+
+        def save_imgs(imgs, count, threshold):
+            p = os.path.join(save_dir, "inferred_%04d_%.2f.png" % (count, threshold))
+            save_concat_images(imgs, img_path=p)
+            print("generated images saved at %s" % p)
+
+        count = 0
+        threshold = 0.1
+        batch_buffer = list()
+        for source_imgs in source_iter:
+            fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
+            img_shape = fake_imgs.shape
+
+            fake_imgs_reshape = np.reshape(np.array(fake_imgs),
+                                           [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+            real_imgs_reshape = np.reshape(np.array(real_imgs),
+                                           [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+
+            # threshold
+            for bt in range(fake_imgs_reshape.shape[0]):
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape[bt][it] >= threshold:
+                        fake_imgs_reshape[bt][it] = 1.0
+                    else:
+                        fake_imgs_reshape[bt][it] = -1.0
+
+            accuracy = 0.0
+            for bt in range(fake_imgs_reshape.shape[0]):
+                over = 0.0
+                less = 0.0
+                base = 0.0
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
+                        over += 1
+                    if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
+                        less += 1
+                    if real_imgs_reshape[bt][it] != 1.0:
+                        base += 1
+                print("over:{} - under:{} - base:{}".format(over, less, base))
+                accuracy += 1 - ((over + less) / base)
+                print("avg acc:{}".format(1 - ((over + less) / base)))
+            accuracy = accuracy / fake_imgs_reshape.shape[0]
+            print("accuracy:{}".format(accuracy))
+
+            fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
+            real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
+            merged_fake_images = merge(scale_back(fake_imgs_reshape), [source_len, 1])
+            merged_real_images = merge(scale_back(real_imgs_reshape), [source_len, 1])
+            merged_pair = np.concatenate([merged_real_images, merged_fake_images], axis=1)
+
+            batch_buffer.append(merged_pair)
+            count += 1
+        if batch_buffer:
+            # last batch
+            save_imgs(batch_buffer, count, threshold)
+
 
