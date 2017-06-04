@@ -147,7 +147,7 @@ class Font2Font(object):
         real_A = real_data[:, :, :, self.input_filters:self.input_filters + self.output_filters]
 
         fake_B, encoded_real_A = self.generator(real_A, is_training=is_training)
-        real_B_generated, _ = self.generator(real_B, is_training=is_training)
+        real_B_generated, _ = self.generator(real_B, is_training=is_training, reuse=True)
 
         real_AB = tf.concat([real_A, real_B], 3)
         fake_AB = tf.concat([real_A, fake_B], 3)
@@ -157,7 +157,7 @@ class Font2Font(object):
         # initialize all variables before setting reuse to True
         real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
-        real_D_logits_generated = self.discriminator(real_AB_generated, is_training=is_training, reuse=False)
+        real_D_logits_generated = self.discriminator(real_AB_generated, is_training=is_training, reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
