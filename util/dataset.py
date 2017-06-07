@@ -21,7 +21,6 @@ class PickledImageProvider(object):
                     e = pickle.load(of)
                     examples.append(e)
                     if len(examples) % 1000 == 0:
-                        print(e)
                         print("processed %d examples" % len(examples))
                 except EOFError:
                     break
@@ -53,6 +52,7 @@ def process(img):
 
         img_A = normalize_image(img_A)
         img_B = normalize_image(img_B)
+        print("img_A shape:{}".format(img_A.shape))
         return np.concatenate([img_A, img_B], axis=2)
     finally:
         img.close()

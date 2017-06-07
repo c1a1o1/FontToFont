@@ -18,24 +18,15 @@ def pickle_examples(paths, train_path, val_path, train_val_split=0.1):
     with open(train_path, 'wb') as ft:
         with open(val_path, 'wb') as fv:
             for p in paths:
-                img = cv2.imread(p)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-                print(img.shape)
-
-                shape = img.shape
-                for c in range(shape[0]):
-                    for r in range(shape[1]):
-                        if img[c][r] < 128:
-                            img[c][r] = 0
-                        else:
-                            img[c][r] = 255
-
-                r = random.random()
-                if r < train_val_split:
-                    pickle.dump(img, fv)
-                else:
-                    pickle.dump(img, ft)
+                # label = int(os.path.basename(p).split("_")[0])
+                with open(p, 'rb') as f:
+                    print("img %s" % p)
+                    img_bytes = f.read()
+                    r = random.random()
+                    if r < train_val_split:
+                        pickle.dump(img_bytes, fv)
+                    else:
+                        pickle.dump(img_bytes, ft)
 
 
 parser = argparse.ArgumentParser(description='Compile list of images into a pickled object for training')
