@@ -21,6 +21,7 @@ class PickledImageProvider(object):
                     e = pickle.load(of)
                     examples.append(e)
                     if len(examples) % 1000 == 0:
+                        print(e)
                         print("processed %d examples" % len(examples))
                 except EOFError:
                     break
