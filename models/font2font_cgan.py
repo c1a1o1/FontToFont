@@ -14,7 +14,7 @@ from util.uitls import scale_back, merge, save_concat_images
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
-LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "tv_loss"])
+LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "cheat_loss", "tv_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -138,10 +138,13 @@ class Font2Font(object):
             h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h3_conv"),
                                   is_training, scope="d_bn_3"))
 
-            # [batch, 31, 31, 64*8] -> [batch,30,30,1]
-            h4 = conv2d(h3, output_filters=1, sh=1, sw=1, scope="d_h4_conv")
+            # real or fake binary loss
+            fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
 
-            return tf.sigmoid(h4)
+            # [batch, 31, 31, 64*8] -> [batch,30,30,1]
+            # h4 = conv2d(h3, output_filters=1, sh=1, sw=1, scope="d_h4_conv")
+
+            return tf.sigmoid(fc1), fc1
 
     def build_model(self, is_training=True):
         real_data = tf.placeholder(tf.float32,
@@ -160,11 +163,11 @@ class Font2Font(object):
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
-        # real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
-        # fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+        real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
+        fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
 
-        real_D = self.discriminator(real_AB, is_training=is_training, reuse=False)
-        fake_D = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+        # real_D = self.discriminator(real_AB, is_training=is_training, reuse=False)
+        # fake_D = self.discriminator(fake_AB, is_training=is_training, reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
@@ -180,24 +183,35 @@ class Font2Font(object):
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
-        d_loss = tf.reduce_mean(-(tf.add(real_D, 1 - fake_D)))
+        # binary real/fake loss
+        d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
+                                                                             labels=tf.ones_like(real_D)))
+        d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+                                                                             labels=tf.zeros_like(fake_D)))
 
-        g_loss = l1_loss + const_loss + tv_loss
+        # maximize the chance generator fool the discriminator
+        cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+                                                                            labels=tf.ones_like(fake_D)))
+
+        d_loss = d_loss_real + d_loss_fake
+
+        g_loss = l1_loss + const_loss + tv_loss + cheat_loss
 
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
+        cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
         d_loss_summary = tf.summary.scalar("d_loss", d_loss)
         g_loss_summary = tf.summary.scalar("g_loss", g_loss)
         tv_loss_summary = tf.summary.scalar("tv_loss", tv_loss)
         d_merged_summary = tf.summary.merge([d_loss_summary])
-        g_merged_summary = tf.summary.merge([l1_loss_summary, const_loss_summary, g_loss_summary,
+        g_merged_summary = tf.summary.merge([cheat_loss_summary, l1_loss_summary, const_loss_summary, g_loss_summary,
                                              tv_loss_summary])
 
         # expose useful nodes in the graph as handles globally
         input_handle = InputHandle(real_data=real_data)
 
-        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, l1_loss=l1_loss,
-                                  tv_loss=tv_loss)
+        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, cheat_loss=cheat_loss,
+                                 l1_loss=l1_loss, tv_loss=tv_loss)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 
