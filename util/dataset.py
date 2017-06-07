@@ -47,7 +47,7 @@ def get_batch_iter(examples, batch_size, augment):
 
 
 def process(img, augment=True):
-    img = bytes_to_file(img)
+    # img = bytes_to_file(img)
     try:
         img_A, img_B = read_split_image(img)
         # if augment:
