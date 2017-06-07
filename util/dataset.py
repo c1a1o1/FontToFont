@@ -52,7 +52,6 @@ def process(img):
 
         img_A = normalize_image(img_A)
         img_B = normalize_image(img_B)
-        print("img_A shape:{}".format(img_A.shape))
 
         img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
         img_B = np.reshape(img_B, [img_B.shape[0], img_B.shape[1], 1])
