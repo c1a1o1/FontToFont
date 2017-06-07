@@ -14,7 +14,7 @@ from util.uitls import scale_back, merge, save_concat_images
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
-LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "cheat_loss", "tv_loss"])
+LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "tv_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -23,7 +23,7 @@ SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
 class Font2Font(object):
     def __init__(self, experiment_dir=None, experiment_id=0, batch_size=16, input_width=256, output_width=256,
                  generator_dim=64, discriminator_dim=64, L1_penalty=100, Lconst_penalty=15, Ltv_penalty=0.0,
-                 Lcategory_penalty=1.0, input_filters=3, output_filters=3):
+                 Lcategory_penalty=1.0, input_filters=1, output_filters=1):
         self.experiment_dir = experiment_dir
         self.experiment_id = experiment_id
         self.batch_size = batch_size
@@ -126,17 +126,28 @@ class Font2Font(object):
         with tf.variable_scope("discriminator"):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
+            # [batch,256,256,1] -> [batch,128,128,64]
             h0 = lrelu(conv2d(image, self.discriminator_dim, scope="d_h0_conv"))
+            # [batch,128,128,64] -> [batch,64,64,64*2]
             h1 = lrelu(batch_norm(conv2d(h0, self.discriminator_dim * 2, scope="d_h1_conv"),
                                   is_training, scope="d_bn_1"))
+            # [batch,64,64,64*2] -> [batch,32,32,64*4]
             h2 = lrelu(batch_norm(conv2d(h1, self.discriminator_dim * 4, scope="d_h2_conv"),
                                   is_training, scope="d_bn_2"))
-            h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, scope="d_h3_conv"),
+            # [batch,32,32,64*4] -> [batch,31,31,64*8]
+            h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h3_conv"),
                                   is_training, scope="d_bn_3"))
-            # real or fake binary loss
-            fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
 
-            return tf.nn.sigmoid(fc1), fc1
+            # [batch, 31, 31, 64*8] -> [batch,30,30,1]
+            h4 = conv2d(h3, output_filters=1, sh=1, sw=1, scope="d_h4_conv")
+
+            return tf.sigmoid(h4)
+
+            # return tf.sigmoid(h4), h4
+            # real or fake binary loss
+            # fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
+            #
+            # return tf.nn.sigmoid(fc1), fc1
 
     def build_model(self, is_training=True):
         real_data = tf.placeholder(tf.float32,
@@ -155,8 +166,11 @@ class Font2Font(object):
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
-        real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
-        fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+        # real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
+        # fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+
+        real_D = self.discriminator(real_AB, is_training=is_training, reuse=False)
+        fake_D = self.discriminator(fake_AB, is_training=is_training, reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
@@ -165,10 +179,10 @@ class Font2Font(object):
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
 
         # binary real/fake loss
-        d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
-                                                                             labels=tf.ones_like(real_D)))
-        d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-                                                                             labels=tf.zeros_like(fake_D)))
+        # d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
+        #                                                                      labels=tf.ones_like(real_D)))
+        # d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+        #                                                                      labels=tf.zeros_like(fake_D)))
         # L1 loss between real and generated images
         l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
 
@@ -178,15 +192,20 @@ class Font2Font(object):
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
         # maximize the chance generator fool the discriminator
-        cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-                                                                            labels=tf.ones_like(fake_D)))
+        # cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+        #                                                                     labels=tf.ones_like(fake_D)))
 
-        d_loss = d_loss_real + d_loss_fake
-        g_loss = cheat_loss + l1_loss + const_loss + tv_loss
+        # d_loss = d_loss_real + d_loss_fake
 
-        d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
-        d_loss_fake_summary = tf.summary.scalar("d_loss_fake", d_loss_fake)
-        cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
+        # g_loss = cheat_loss + l1_loss + const_loss + tv_loss
+
+        d_loss = tf.reduce_mean(-(tf.log(real_D) + tf.log(1 - fake_D)))
+
+        g_loss = l1_loss + const_loss + tv_loss
+
+        # d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
+        # d_loss_fake_summary = tf.summary.scalar("d_loss_fake", d_loss_fake)
+        # cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
 
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
@@ -194,15 +213,15 @@ class Font2Font(object):
         g_loss_summary = tf.summary.scalar("g_loss", g_loss)
         tv_loss_summary = tf.summary.scalar("tv_loss", tv_loss)
 
-        d_merged_summary = tf.summary.merge([d_loss_real_summary, d_loss_fake_summary, d_loss_summary])
-        g_merged_summary = tf.summary.merge([cheat_loss_summary, l1_loss_summary, const_loss_summary, g_loss_summary,
+        d_merged_summary = tf.summary.merge([d_loss_summary])
+        g_merged_summary = tf.summary.merge([l1_loss_summary, const_loss_summary, g_loss_summary,
                                              tv_loss_summary])
 
         # expose useful nodes in the graph as handles globally
         input_handle = InputHandle(real_data=real_data)
 
         loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, l1_loss=l1_loss,
-                                 cheat_loss=cheat_loss, tv_loss=tv_loss)
+                                  tv_loss=tv_loss)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 
@@ -343,52 +362,6 @@ class Font2Font(object):
 
         return avg_accuracy
 
-        #
-        #
-        #
-        #
-        # # calculate the average accuracy
-        # img_shape = fake.shape
-        # fake_imgs_reshape = fake
-        # real_imgs_reshape = real
-        #
-        # # translation of gravity center
-        # fake_imgs_reshape, real_imgs_reshape = self.translation_gravity_center(fake_imgs_reshape, real_imgs_reshape)
-        #
-        # fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
-        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        # real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
-        #                                [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        #
-        # # print("fake[0]:{}".format(fake_imgs_reshape[0]))
-        # # print("fake min:{}".format(np.amin(fake_imgs_reshape[0])))
-        # # print("fake max:{}".format(np.amax(fake_imgs_reshape[0])))
-        #
-        # # threshold
-        # threshold = 0.0
-        # for bt in range(fake_imgs_reshape.shape[0]):
-        #     for it in range(fake_imgs_reshape.shape[1]):
-        #         if fake_imgs_reshape[bt][it] >= threshold:
-        #             fake_imgs_reshape[bt][it] = 1.0
-        #         else:
-        #             fake_imgs_reshape[bt][it] = -1.0
-        #
-        # accuracy = 0.0
-        # for bt in range(fake_imgs_reshape.shape[0]):
-        #     over = 0.0
-        #     less = 0.0
-        #     base = 0.0
-        #     for it in range(fake_imgs_reshape.shape[1]):
-        #         if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-        #             over += 1
-        #         if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-        #             less += 1
-        #         if real_imgs_reshape[bt][it] != 1.0:
-        #             base += 1
-        #     accuracy += 1 - ((over + less) / base)
-        # accuracy = accuracy / fake_imgs_reshape.shape[0]
-        # print("accuracy:{}".format(accuracy))
-        # return accuracy
 
     def translation_gravity_center(self, fake, real):
 
