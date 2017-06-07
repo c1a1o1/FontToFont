@@ -180,7 +180,7 @@ class Font2Font(object):
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
-        d_loss = tf.reduce_mean(-(tf.add(real_D) + tf.add(1 - fake_D)))
+        d_loss = tf.reduce_mean(-(tf.add(real_D, 1 - fake_D)))
 
         g_loss = l1_loss + const_loss + tv_loss
 
