@@ -38,14 +38,14 @@ def get_batch_iter(examples, batch_size, augment):
     def batch_iter():
         for i in range(0, len(padded), batch_size):
             batch = padded[i: i + batch_size]
-            processed = [process(e) for e in batch]
+            processed = [process(e, augment) for e in batch]
             # stack into tensor
             yield np.array(processed).astype(np.float32)
 
     return batch_iter()
 
 
-def process(img):
+def process(img, augment):
     img = bytes_to_file(img)
     try:
         img_A, img_B = read_split_image(img)
@@ -53,6 +53,23 @@ def process(img):
         img_A = normalize_image(img_A)
         img_B = normalize_image(img_B)
 
+        if augment:
+            # augment the image by:
+            # 1) enlarge the image
+            # 2) random crop the image back to its original size
+            # NOTE: image A and B needs to be in sync as how much
+            # to be shifted
+            w, h, _ = img_A.shape
+            multiplier = random.uniform(1.00, 1.20)
+            # add an eps to prevent cropping issue
+            nw = int(multiplier * w) + 1
+            nh = int(multiplier * h) + 1
+            shift_x = int(np.ceil(np.random.uniform(0.01, nw - w)))
+            shift_y = int(np.ceil(np.random.uniform(0.01, nh - h)))
+            img_A = shift_and_resize_image(img_A, shift_x, shift_y, nw, nh)
+            img_B = shift_and_resize_image(img_B, shift_x, shift_y, nw, nh)
+
+        # 2D to 3D matrix
         img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
         img_B = np.reshape(img_B, [img_B.shape[0], img_B.shape[1], 1])
         return np.concatenate([img_A, img_B], axis=2)
@@ -89,7 +106,7 @@ class TrainDataProvider(object):
 
         val_examples = val_examples[0: size]
 
-        processed = [process(e) for e in val_examples]
+        processed = [process(e, augment=False) for e in val_examples]
 
         return np.array(processed).astype(np.float32)
 

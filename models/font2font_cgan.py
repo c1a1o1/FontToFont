@@ -141,16 +141,18 @@ class Font2Font(object):
             # real or fake binary loss
             fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
 
-            # [batch, 31, 31, 64*8] -> [batch,30,30,1]
-            # h4 = conv2d(h3, output_filters=1, sh=1, sw=1, scope="d_h4_conv")
-
             return tf.sigmoid(fc1), fc1
 
-    def build_model(self, is_training=True):
+    def build_model(self, is_training=True, no_target_source=False):
         real_data = tf.placeholder(tf.float32,
                                    [self.batch_size, self.input_width, self.input_width,
                                     self.input_filters + self.output_filters],
                                    name='real_A_and_B_images')
+
+        no_target_data = tf.placeholder(tf.float32,
+                                        [self.batch_size, self.input_width, self.input_width,
+                                         self.input_filters + self.output_filters],
+                                        name='no_target_A_and_B_images')
         # target images
         real_B = real_data[:, :, :, :self.input_filters]
         # source images
@@ -165,9 +167,6 @@ class Font2Font(object):
         # initialize all variables before setting reuse to True
         real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
-
-        # real_D = self.discriminator(real_AB, is_training=is_training, reuse=False)
-        # fake_D = self.discriminator(fake_AB, is_training=is_training, reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
@@ -196,6 +195,33 @@ class Font2Font(object):
         d_loss = d_loss_real + d_loss_fake
 
         g_loss = l1_loss + const_loss + tv_loss + cheat_loss
+
+        if no_target_source:
+            # no_target source are examples that don't have the corresponding target images
+            # however, except L1 loss, we can compute category loss, binary loss and constant losses with those examples
+            # it is useful when discriminator get saturated and d_loss drops to near zero
+            # those data could be used as additional source of losses to break the saturation
+            no_target_A = no_target_data[:, :, :, self.input_filters:self.input_filters + self.output_filters]
+            no_target_B, encoded_no_target_A = self.generator(no_target_A, is_training=is_training, reuse=True)
+
+            no_target_AB = tf.concat([no_target_A, no_target_B], 3)
+
+            no_target_D, no_target_D_logits = self.discriminator(no_target_AB, is_training=is_training, reuse=True)
+
+            encoded_no_target_B = self.encoder(no_target_B, is_training, reuse=True)[0]
+
+            no_target_const_loss = tf.reduce_mean(
+                tf.square(encoded_no_target_A - encoded_no_target_B)) * self.Lconst_penalty
+
+            d_loss_no_target = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
+                                                                                      labels=tf.zeros_like(
+                                                                                          no_target_D)))
+
+            cheat_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
+                                                                                 labels=tf.ones_like(no_target_D)))
+
+            d_loss = d_loss_real + d_loss_fake + d_loss_no_target
+            g_loss = cheat_loss / 2.0 + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
 
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
@@ -294,11 +320,6 @@ class Font2Font(object):
 
         fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
         print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
-
-        # fake_imgs, real_imgs = self.translation_gravity_center(fake_imgs, real_imgs)
-
-        # accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
-        # print("Sample accuracy: %.5f" % accuracy)
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -499,9 +520,10 @@ class Font2Font(object):
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
                 _, batch_g_loss,  \
-                const_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
+                const_loss, cheat_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
                                                                          loss_handle.g_loss,
                                                                          loss_handle.const_loss,
+                                                                         loss_handle.cheat_loss,
                                                                          loss_handle.l1_loss,
                                                                          loss_handle.tv_loss,
                                                                          summary_handle.g_merged],
@@ -511,9 +533,9 @@ class Font2Font(object):
                                                                         })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
-                             "const_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
+                             "const_loss: %.5f, cheat_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
                 print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss,
-                                    const_loss, l1_loss, tv_loss))
+                                    const_loss, cheat_loss, l1_loss, tv_loss))
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
