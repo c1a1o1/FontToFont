@@ -53,13 +53,17 @@ def process(img, augment):
         img_A = normalize_image(img_A)
         img_B = normalize_image(img_B)
 
+        # 2D to 3D matrix
+        img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
+        img_B = np.reshape(img_B, [img_B.shape[0], img_B.shape[1], 1])
+
         if augment:
             # augment the image by:
             # 1) enlarge the image
             # 2) random crop the image back to its original size
             # NOTE: image A and B needs to be in sync as how much
             # to be shifted
-            w, h = img_A.shape
+            w, h, _ = img_A.shape
             multiplier = random.uniform(1.00, 1.20)
             # add an eps to prevent cropping issue
             nw = int(multiplier * w) + 1
@@ -68,10 +72,6 @@ def process(img, augment):
             shift_y = int(np.ceil(np.random.uniform(0.01, nh - h)))
             img_A = shift_and_resize_image(img_A, shift_x, shift_y, nw, nh)
             img_B = shift_and_resize_image(img_B, shift_x, shift_y, nw, nh)
-
-        # 2D to 3D matrix
-        img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
-        img_B = np.reshape(img_B, [img_B.shape[0], img_B.shape[1], 1])
 
         return np.concatenate([img_A, img_B], axis=2)
     finally:
