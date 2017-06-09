@@ -15,7 +15,7 @@ from util.uitls import scale_back, merge, save_concat_images
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
 LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "cheat_loss", "tv_loss"])
-InputHandle = namedtuple("InputHandle", ["real_data"])
+InputHandle = namedtuple("InputHandle", ["real_data", "no_target_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
 
@@ -234,7 +234,7 @@ class Font2Font(object):
                                              tv_loss_summary])
 
         # expose useful nodes in the graph as handles globally
-        input_handle = InputHandle(real_data=real_data)
+        input_handle = InputHandle(real_data=real_data, no_target_data=no_target_data)
 
         loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, cheat_loss=cheat_loss,
                                  l1_loss=l1_loss, tv_loss=tv_loss)
@@ -473,6 +473,7 @@ class Font2Font(object):
 
         tf.global_variables_initializer().run()
         real_data = input_handle.real_data
+        no_target_data = input_handle.no_target_data
 
         # filter by one type of labels
         data_provider = TrainDataProvider(self.data_dir)
@@ -508,13 +509,15 @@ class Font2Font(object):
                 _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
                                                             summary_handle.d_merged],
                                                            feed_dict={real_data: batch_images,
-                                                                      learning_rate: current_lr
+                                                                      learning_rate: current_lr,
+                                                                      no_target_data: batch_images
                                                                       })
                 # Optimize G
                 _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
                                                 feed_dict={
                                                     real_data: batch_images,
-                                                    learning_rate: current_lr
+                                                    learning_rate: current_lr,
+                                                    no_target_data: batch_images
                                                 })
                 # magic move to Optimize G again
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
@@ -527,9 +530,9 @@ class Font2Font(object):
                                                                          loss_handle.l1_loss,
                                                                          loss_handle.tv_loss,
                                                                          summary_handle.g_merged],
-                                                                        feed_dict={
-                                                                            real_data: batch_images,
-                                                                            learning_rate: current_lr
+                                                                        feed_dict={ real_data: batch_images,
+                                                                                    learning_rate: current_lr,
+                                                                                    no_target_data: batch_images
                                                                         })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
