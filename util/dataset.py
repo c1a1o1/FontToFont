@@ -52,6 +52,7 @@ def process(img, augment):
 
         img_A = normalize_image(img_A)
         img_B = normalize_image(img_B)
+        print("__{}".format(img_A))
 
         if augment:
             # augment the image by:
@@ -70,7 +71,6 @@ def process(img, augment):
             img_B = shift_and_resize_image(img_B, shift_x, shift_y, nw, nh)
 
         # 2D to 3D matrix
-        print("__{}".format(img_A))
         img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
         img_B = np.reshape(img_B, [img_B.shape[0], img_B.shape[1], 1])
 
