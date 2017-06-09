@@ -49,11 +49,6 @@ def process(img, augment):
     img = bytes_to_file(img)
     try:
         img_A, img_B = read_split_image(img)
-
-        img_A = normalize_image(img_A)
-        img_B = normalize_image(img_B)
-        print("__{}".format(img_A))
-
         if augment:
             # augment the image by:
             # 1) enlarge the image
@@ -69,6 +64,9 @@ def process(img, augment):
             shift_y = int(np.ceil(np.random.uniform(0.01, nh - h)))
             img_A = shift_and_resize_image(img_A, shift_x, shift_y, nw, nh)
             img_B = shift_and_resize_image(img_B, shift_x, shift_y, nw, nh)
+
+        img_A = normalize_image(img_A)
+        img_B = normalize_image(img_B)
 
         # 2D to 3D matrix
         img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
