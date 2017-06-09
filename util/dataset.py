@@ -70,7 +70,7 @@ def process(img, augment):
             img_B = shift_and_resize_image(img_B, shift_x, shift_y, nw, nh)
 
         # 2D to 3D matrix
-        print(img_A)
+        print("__{}".format(img_A))
         img_A = np.reshape(img_A, [img_A.shape[0], img_A.shape[1], 1])
         img_B = np.reshape(img_B, [img_B.shape[0], img_B.shape[1], 1])
 
