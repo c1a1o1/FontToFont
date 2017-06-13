@@ -160,7 +160,7 @@ class Font2Font(object):
 
         fake_B, encoded_real_A = self.generator(real_A, is_training=is_training)
 
-        real_B_generated = self.generator(real_B, is_training=is_training)
+        real_B_generated, _ = self.generator(real_B, is_training=is_training)
 
         real_AB = tf.concat([real_A, real_B], 3)
         fake_AB = tf.concat([real_A, fake_B], 3)
