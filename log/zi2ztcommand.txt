@@ -1,0 +1,945 @@
+python3 font2img.py --src_font=/Users/liupeng/Documents/dl2tcc/DeepLearning2TCC/ttf_files/fangzhengkaisc.TTF --dst_font=/Users/liupeng/Documents/dl2tcc/DeepLearning2TCC/ttf_files/qigongscfont.TTF --charset=CN  --sample_count=2000 --sample_dir=experiment/data --label=0 --filter=1 --shuffle=1
+
+
+
+python3 package.py --dir=experiment/data --save_dir=experiment/data --split_ratio=0.5
+
+
+
+
+nohup python3 train.py --experiment_dir=/home/liupeng/dltcc/experiment --experiment_id=0 --batch_size=32  --lr=0.001 --epoch=100 --schedule=20 --L1_penalty=100 --Lconst_penalty=15 &
+
+
+ nohup python3 train.py --experiment_dir=/home/liupeng/dltcc/experiment --experiment_id=0 --batch_size=32  --lr=0.001 --epoch=100 --schedule=20 --L1_penalty=100 --Lconst_penalty=15 --sample_steps=100 &
+
+
+
+mv 0_5999.jpg 0_0499.jpg
+mv 0_5998.jpg 0_2075.jpg
+mv 0_5997.jpg 0_2719.jpg
+mv 0_5996.jpg 0_4650.jpg
+mv 0_5995.jpg 0_5289.jpg
+mv 0_5994.jpg 0_0970.jpg
+mv 0_5993.jpg 0_2173.jpg
+mv 0_5992.jpg 0_3778.jpg
+mv 0_5991.jpg 0_4775.jpg
+mv 0_5990.jpg 0_5345.jpg
+mv 0_5989.jpg 0_1284.jpg
+mv 0_5988.jpg 0_2203.jpg
+mv 0_5987.jpg 0_4141.jpg
+mv 0_5986.jpg 0_4835.jpg
+mv 0_5985.jpg 0_5427.jpg
+mv 0_5984.jpg 0_1453.jpg
+mv 0_5983.jpg 0_2349.jpg
+mv 0_5982.jpg 0_4191.jpg
+mv 0_5981.jpg 0_4905.jpg
+mv 0_5980.jpg 0_5428.jpg
+mv 0_5979.jpg 0_1620.jpg
+mv 0_5978.jpg 0_2560.jpg
+mv 0_5977.jpg 0_4211.jpg
+mv 0_5976.jpg 0_4961.jpg
+mv 0_5975.jpg 0_5492.jpg
+
+
+
+
+python3 train.py --experiment_dir=../experiment --experiment_id=0 --batch_size=32  --lr=0.001 --epoch=10 --schedule=20 --L1_penalty=100 --Lconst_penalty=15 --sample_steps=2
+
+
+
+
+python3 test.py --model_dir=../experiment/checkpoint/experiment_11_batch_20 --source_obj=../experiment/data/val.obj --embedding_ids=0 --save_dir=../experiment/save_dir/experiment_11_batch_20/
+
+
+
+
+
+言字旁
+
+
+python3 test.py --model_dir=../experiment/checkpoint/experiment_11_batch_20 --source_obj=../experiment/data/train.obj --embedding_ids=0 --save_dir=../experiment/save_dir/experiment_11_batch_20/
+
+tran set:
+
+0.7
+
+avg acc:0.9588825854683184
+avg acc:0.9557273598308389
+avg acc:0.9208033946870523
+avg acc:0.9668586952963897
+avg acc:0.9064894364294591
+avg acc:0.9078529602408183
+avg acc:0.972066107432917
+avg acc:0.8901401938605327
+avg acc:0.9218695576454197
+avg acc:0.9584784414698423
+avg acc:0.9604164958596376
+avg acc:0.9571669331954922
+avg acc:0.9391989487288089
+avg acc:0.9567035834978419
+avg acc:0.9625377247080436
+avg acc:0.9318726312003762
+avg acc:0.9016104161237077
+avg acc:0.9078931588988826
+avg acc:0.9416867784228035
+avg acc:0.9531474959576495
+avg acc:0.9501318894904901
+avg acc:0.9311763871150844
+avg acc:0.926180696458323
+avg acc:0.906401465415228
+avg acc:0.921798807035876
+avg acc:0.9169507419052347
+avg acc:0.9564278178743072
+avg acc:0.9371345510394383
+avg acc:0.9391066366924055
+avg acc:0.9337714589365694
+avg acc:0.9541135611546149
+avg acc:0.9512169329838095
+avg acc:0.9458560493419241
+avg acc:0.940560282988906
+avg acc:0.9490855711179541
+avg acc:0.9348254272164086
+avg acc:0.9698250616096984
+avg acc:0.9263844992560251
+avg acc:0.9558599695585996
+avg acc:0.9230482003993701
+avg acc:0.9478333525728766
+avg acc:0.9553859538991861
+avg acc:0.9389856319936436
+avg acc:0.9358134176692424
+avg acc:0.9542834557491519
+avg acc:0.9509386496579898
+avg acc:0.9500937615839167
+avg acc:0.9191402975976662
+avg acc:0.9458756522741115
+avg acc:0.9571683001715453
+avg acc:0.9502323855106665
+avg acc:0.9371806876611962
+avg acc:0.9469745739863433
+avg acc:0.9416274583736346
+avg acc:0.9507448074847868
+avg acc:0.9583842857300239
+avg acc:0.933033772212402
+avg acc:0.9594306712449548
+avg acc:0.9325319308790383
+avg acc:0.9501749482738076
+avg acc:0.9511299575403201
+avg acc:0.9573802637921213
+avg acc:0.9285903787325049
+avg acc:0.9051303625734853
+avg acc:0.9474976517311273
+accuracy:0.9407203310067823
+
+
+
+
+python3 test.py --model_dir=../experiment/checkpoint/experiment_11_batch_20 --source_obj=../experiment/data/val.obj --embedding_ids=0 --save_dir=../experiment/save_dir/experiment_11_batch_20/
+
+
+test set: 
+
+0.7
+
+avg acc:0.9465333199764028
+avg acc:0.9462358497308768
+avg acc:0.9238980545986958
+avg acc:0.9483477650994039
+avg acc:0.9545151570237919
+avg acc:0.9604500437331247
+avg acc:0.9171410290353896
+avg acc:0.9532535707959614
+avg acc:0.9363339487588918
+accuracy:0.9429676376391709
+
+
+0.6
+
+avg acc:0.9459815766637741
+avg acc:0.9475615920529219
+avg acc:0.9243135510862941
+avg acc:0.9506424462022074
+avg acc:0.9561832397313071
+avg acc:0.9631523798665516
+avg acc:0.9192834504616233
+avg acc:0.9566246056782335
+avg acc:0.937841461928034
+accuracy:0.9446204781856609
+
+
+0.5
+
+avg acc:0.9462241863309152
+avg acc:0.9492278458767189
+avg acc:0.9255972471475378
+avg acc:0.9525095110306401
+avg acc:0.9575491426181514
+avg acc:0.9639252458162402
+avg acc:0.9205006169575181
+avg acc:0.9586161781895784
+avg acc:0.9389020871751422
+accuracy:0.9458946734602713
+
+
+
+0.4
+
+avg acc:0.9466600005555093
+avg acc:0.9501339128907622
+avg acc:0.9258406011738248
+avg acc:0.9545053051112188
+avg acc:0.9582714582714583
+avg acc:0.9659143301927218
+avg acc:0.9216356689020294
+avg acc:0.9604428938158861
+avg acc:0.9390563782455674
+accuracy:0.946940061017664
+
+0.2
+
+avg acc:0.9453360859527615
+avg acc:0.9513048245614035
+avg acc:0.927636770120989
+avg acc:0.9560961697822835
+avg acc:0.9593889942031375
+avg acc:0.9675370424565625
+avg acc:0.9229449229449229
+avg acc:0.9647056933556099
+avg acc:0.9407683803206192
+accuracy:0.9484132092998101
+
+
+0.1
+
+avg acc:0.9458514993177356
+avg acc:0.9521038152544417
+avg acc:0.9281672937993285
+avg acc:0.9573544597908867
+avg acc:0.9599081732406278
+avg acc:0.9684030881755384
+avg acc:0.9235932449370011
+avg acc:0.9661222894887564
+avg acc:0.942324158007833
+accuracy:0.9493142246680166
+
+
+
+5.11------
+
+0: 整字  id=0
+
+nohup python3 train.py --experiment_dir=/home/liupeng/dltcc/experiment --experiment_id=0 --batch_size=20  --lr=0.001 --epoch=100 --schedule=20 --L1_penalty=100 --Lconst_penalty=15 --sample_steps=200 &
+
+
+
+
+
+
+1: 三点水  id=1
+
+Train:
+
+
+python3 test.py --model_dir=/Users/liupeng/Documents/dl2tcc/experiment/checkpoint/experiment_1_batch_20 --source_obj=/Users/liupeng/Documents/dl2tcc/experiment/data_shui/train.obj --embedding_ids=0 --save_dir=../experiment/save_dir/experiment_1_batch_20_shui_train/
+
+
+over:4373.0 - under:8193.0 - base:17991.0
+avg acc:0.30153965871824806
+over:5600.0 - under:6407.0 - base:16557.0
+avg acc:0.27480823820740474
+over:8769.0 - under:10905.0 - base:15513.0
+avg acc:-0.2682266486172886
+over:6330.0 - under:6683.0 - base:14343.0
+avg acc:0.09272816007808682
+over:8742.0 - under:5189.0 - base:16125.0
+avg acc:0.13606201550387598
+over:6589.0 - under:7641.0 - base:15696.0
+avg acc:0.09339959225280325
+over:5262.0 - under:9825.0 - base:17280.0
+avg acc:0.1269097222222222
+over:5313.0 - under:7691.0 - base:15075.0
+avg acc:0.13737976782752903
+over:4605.0 - under:8442.0 - base:18012.0
+avg acc:0.27564956695536313
+over:7125.0 - under:6873.0 - base:17829.0
+avg acc:0.2148746424364799
+over:5229.0 - under:7101.0 - base:19404.0
+avg acc:0.36456400742115025
+over:8352.0 - under:5718.0 - base:15480.0
+avg acc:0.09108527131782951
+over:5526.0 - under:8004.0 - base:15585.0
+avg acc:0.13185755534167465
+over:7605.0 - under:5204.0 - base:14877.0
+avg acc:0.13900652013174697
+over:4343.0 - under:7833.0 - base:15408.0
+avg acc:0.20976116303219106
+over:5309.0 - under:9401.0 - base:15990.0
+avg acc:0.08005003126954346
+over:6427.0 - under:6654.0 - base:16860.0
+avg acc:0.22413997627520754
+over:7180.0 - under:5590.0 - base:20448.0
+avg acc:0.37548904538341155
+over:6032.0 - under:7238.0 - base:14583.0
+avg acc:0.09003634368785574
+over:7222.0 - under:8559.0 - base:16398.0
+avg acc:0.03762653982192954
+over:5498.0 - under:6671.0 - base:15153.0
+avg acc:0.19692470137926488
+over:8539.0 - under:6593.0 - base:16839.0
+avg acc:0.10137181542846962
+over:7499.0 - under:4861.0 - base:14001.0
+avg acc:0.11720591386329549
+over:4380.0 - under:8373.0 - base:15435.0
+avg acc:0.17376093294460637
+over:3704.0 - under:9962.0 - base:19209.0
+avg acc:0.288562652923109
+over:3277.0 - under:10559.0 - base:17541.0
+avg acc:0.21121942876688904
+over:5985.0 - under:8418.0 - base:19620.0
+avg acc:0.26590214067278284
+over:3808.0 - under:9365.0 - base:22869.0
+avg acc:0.42398006034369673
+over:6736.0 - under:6373.0 - base:15687.0
+avg acc:0.1643398992796583
+over:6963.0 - under:7524.0 - base:12912.0
+avg acc:-0.1219795539033457
+over:2970.0 - under:10179.0 - base:20109.0
+avg acc:0.3461136804415933
+over:5432.0 - under:7458.0 - base:17187.0
+avg acc:0.2500145458776982
+over:5344.0 - under:8828.0 - base:16320.0
+avg acc:0.1316176470588235
+over:4469.0 - under:8125.0 - base:22134.0
+avg acc:0.4310111141230686
+over:6481.0 - under:7026.0 - base:17493.0
+avg acc:0.22786257360086892
+over:6057.0 - under:12209.0 - base:20382.0
+avg acc:0.1038170935138848
+over:6699.0 - under:6029.0 - base:13491.0
+avg acc:0.05655622266696314
+over:6058.0 - under:8071.0 - base:17994.0
+avg acc:0.21479382016227633
+over:10080.0 - under:2999.0 - base:15723.0
+avg acc:0.16816129237422883
+over:4604.0 - under:8314.0 - base:22566.0
+avg acc:0.42754586546131346
+over:4364.0 - under:8081.0 - base:16011.0
+avg acc:0.222721878708388
+over:8251.0 - under:4377.0 - base:14250.0
+avg acc:0.11382456140350872
+over:6364.0 - under:5709.0 - base:15426.0
+avg acc:0.21736030079087254
+over:3385.0 - under:8081.0 - base:20373.0
+avg acc:0.4371962892063025
+over:6621.0 - under:6375.0 - base:13299.0
+avg acc:0.02278366794495823
+over:4576.0 - under:8051.0 - base:14211.0
+avg acc:0.11146295123495886
+over:4782.0 - under:8090.0 - base:17991.0
+avg acc:0.284531154466122
+over:2760.0 - under:9324.0 - base:14781.0
+avg acc:0.18246397402070225
+over:5553.0 - under:7807.0 - base:18438.0
+avg acc:0.27540948042087
+over:5334.0 - under:7600.0 - base:17487.0
+avg acc:0.26036484245439473
+over:8059.0 - under:3798.0 - base:17172.0
+avg acc:0.30951549033310044
+over:4879.0 - under:6872.0 - base:13968.0
+avg acc:0.15871993127147765
+over:5599.0 - under:6076.0 - base:17460.0
+avg acc:0.33132875143184426
+over:7892.0 - under:5085.0 - base:15441.0
+avg acc:0.15957515704941394
+over:7251.0 - under:5976.0 - base:16950.0
+avg acc:0.21964601769911507
+over:7722.0 - under:4965.0 - base:13350.0
+avg acc:0.049662921348314626
+over:10147.0 - under:2978.0 - base:12855.0
+avg acc:-0.02100350058343059
+over:4371.0 - under:7813.0 - base:14751.0
+avg acc:0.1740221001965968
+over:7114.0 - under:5981.0 - base:15171.0
+avg acc:0.1368400237294839
+over:8511.0 - under:4060.0 - base:14736.0
+avg acc:0.14691910966340938
+over:5276.0 - under:7570.0 - base:18012.0
+avg acc:0.2868087941372418
+over:7147.0 - under:7352.0 - base:17280.0
+avg acc:0.16093749999999996
+over:5089.0 - under:7072.0 - base:15597.0
+avg acc:0.22029877540552667
+over:7251.0 - under:5322.0 - base:16860.0
+avg acc:0.254270462633452
+over:4634.0 - under:8111.0 - base:16767.0
+avg acc:0.23987594680026247
+over:6366.0 - under:5397.0 - base:14466.0
+avg acc:0.18685192866030698
+over:7728.0 - under:5744.0 - base:17046.0
+avg acc:0.20966795729203336
+over:6274.0 - under:5800.0 - base:14436.0
+avg acc:0.1636187309504018
+over:6231.0 - under:6904.0 - base:20862.0
+avg acc:0.3703863483846228
+over:6953.0 - under:7167.0 - base:17673.0
+avg acc:0.20104113619645791
+over:7407.0 - under:5341.0 - base:16281.0
+avg acc:0.21700141268963824
+over:9174.0 - under:4618.0 - base:15162.0
+avg acc:0.09035747262894078
+over:7300.0 - under:5900.0 - base:19824.0
+avg acc:0.33414043583535114
+over:5327.0 - under:9336.0 - base:20196.0
+avg acc:0.2739651416122004
+over:5513.0 - under:6833.0 - base:17268.0
+avg acc:0.28503590456335415
+over:5302.0 - under:6279.0 - base:16572.0
+avg acc:0.30117064928795556
+over:6539.0 - under:6272.0 - base:15840.0
+avg acc:0.1912247474747475
+over:7202.0 - under:5871.0 - base:14661.0
+avg acc:0.10831457608621509
+over:4251.0 - under:8959.0 - base:19674.0
+avg acc:0.32855545389854635
+over:7712.0 - under:11398.0 - base:18516.0
+avg acc:-0.03208036292935845
+over:3983.0 - under:9283.0 - base:16335.0
+avg acc:0.18787878787878787
+over:6357.0 - under:5958.0 - base:14445.0
+avg acc:0.14745586708203529
+over:6091.0 - under:5067.0 - base:14382.0
+avg acc:0.2241691002642192
+over:4410.0 - under:8172.0 - base:13848.0
+avg acc:0.09142114384748701
+over:5188.0 - under:7190.0 - base:14682.0
+avg acc:0.15692684920310584
+over:5989.0 - under:6697.0 - base:14613.0
+avg acc:0.1318688838705262
+over:3442.0 - under:8226.0 - base:15774.0
+avg acc:0.26030176239381264
+over:6428.0 - under:6862.0 - base:20238.0
+avg acc:0.3433145567743848
+over:6352.0 - under:6085.0 - base:15408.0
+avg acc:0.1928219106957425
+over:5950.0 - under:6339.0 - base:19398.0
+avg acc:0.3664810805237654
+over:6029.0 - under:7415.0 - base:15315.0
+avg acc:0.12216780933725102
+over:6098.0 - under:5923.0 - base:18900.0
+avg acc:0.36396825396825394
+over:4021.0 - under:7567.0 - base:17313.0
+avg acc:0.33067637035753483
+over:5446.0 - under:6309.0 - base:16197.0
+avg acc:0.27424831758967705
+over:9607.0 - under:2259.0 - base:16185.0
+avg acc:0.26685202347852954
+over:7856.0 - under:5413.0 - base:17520.0
+avg acc:0.24263698630136987
+over:6454.0 - under:6970.0 - base:16635.0
+avg acc:0.1930267508265705
+over:6244.0 - under:8727.0 - base:18444.0
+avg acc:0.1882997180654955
+over:3078.0 - under:9008.0 - base:16545.0
+avg acc:0.26950740404956175
+over:11259.0 - under:1793.0 - base:16227.0
+avg acc:0.19566155173476307
+over:3737.0 - under:7714.0 - base:16806.0
+avg acc:0.3186362013566584
+over:5209.0 - under:7152.0 - base:16764.0
+avg acc:0.2626461465044142
+over:5358.0 - under:7861.0 - base:20070.0
+avg acc:0.34135525660189336
+over:9543.0 - under:3720.0 - base:17139.0
+avg acc:0.2261508839488885
+over:4287.0 - under:9450.0 - base:17844.0
+avg acc:0.23016139878950903
+over:4427.0 - under:6967.0 - base:16827.0
+avg acc:0.32287395257621676
+over:5091.0 - under:9216.0 - base:18558.0
+avg acc:0.2290656320724216
+over:8296.0 - under:4985.0 - base:16332.0
+avg acc:0.1868111682586333
+over:5416.0 - under:6878.0 - base:17553.0
+avg acc:0.2996069048025979
+over:3708.0 - under:9363.0 - base:19293.0
+avg acc:0.3225003887420308
+over:6497.0 - under:8860.0 - base:16857.0
+avg acc:0.08898380494749958
+over:6533.0 - under:7771.0 - base:15597.0
+avg acc:0.08290055779957684
+over:5882.0 - under:6182.0 - base:17850.0
+avg acc:0.3241456582633053
+over:11379.0 - under:3530.0 - base:14883.0
+avg acc:-0.0017469596183565805
+over:3570.0 - under:9694.0 - base:20952.0
+avg acc:0.3669339442535319
+over:4000.0 - under:8345.0 - base:20115.0
+avg acc:0.3862788963460104
+over:1899.0 - under:10955.0 - base:19344.0
+avg acc:0.3355045492142267
+over:4950.0 - under:9011.0 - base:18753.0
+avg acc:0.2555324481416307
+over:5761.0 - under:5848.0 - base:14967.0
+avg acc:0.224360259236988
+over:5072.0 - under:8385.0 - base:20364.0
+avg acc:0.3391769789825182
+over:4696.0 - under:8845.0 - base:18027.0
+avg acc:0.24884894879902364
+over:3856.0 - under:9278.0 - base:17574.0
+avg acc:0.25264595425059744
+over:6003.0 - under:9602.0 - base:17007.0
+avg acc:0.08243664373493265
+over:7887.0 - under:6254.0 - base:18492.0
+avg acc:0.23529093662124156
+over:8487.0 - under:5056.0 - base:17073.0
+avg acc:0.2067592104492474
+over:7616.0 - under:3597.0 - base:16941.0
+avg acc:0.3381146331385396
+over:5968.0 - under:6977.0 - base:19347.0
+avg acc:0.3309040161265312
+over:5084.0 - under:9984.0 - base:16227.0
+avg acc:0.07142416959388675
+over:4988.0 - under:7459.0 - base:16380.0
+avg acc:0.24010989010989015
+over:5627.0 - under:6961.0 - base:16080.0
+avg acc:0.2171641791044776
+over:4773.0 - under:9755.0 - base:20583.0
+avg acc:0.29417480445027455
+over:3439.0 - under:8592.0 - base:19452.0
+avg acc:0.3815031873329221
+over:4220.0 - under:7865.0 - base:16308.0
+avg acc:0.25895266127054206
+over:7714.0 - under:6091.0 - base:18156.0
+avg acc:0.23964529632077547
+over:7484.0 - under:6277.0 - base:14973.0
+avg acc:0.08094570226407538
+over:5421.0 - under:6710.0 - base:18729.0
+avg acc:0.35228789577660313
+over:5950.0 - under:6341.0 - base:17499.0
+avg acc:0.29761700668609636
+over:5494.0 - under:7270.0 - base:18933.0
+avg acc:0.32583320128875504
+over:5565.0 - under:7288.0 - base:17661.0
+avg acc:0.27223826510390126
+over:6508.0 - under:5860.0 - base:15246.0
+avg acc:0.18877082513446153
+over:4627.0 - under:8251.0 - base:15774.0
+avg acc:0.18359325472296184
+over:6705.0 - under:5130.0 - base:15861.0
+avg acc:0.2538301494231133
+over:4566.0 - under:8084.0 - base:18009.0
+avg acc:0.29757343550447
+over:5786.0 - under:7131.0 - base:18270.0
+avg acc:0.2929939792008758
+over:7615.0 - under:5624.0 - base:17457.0
+avg acc:0.24162227186801855
+over:6993.0 - under:6841.0 - base:15909.0
+avg acc:0.13042931673895275
+over:5343.0 - under:6622.0 - base:16821.0
+avg acc:0.2886867605968729
+over:7921.0 - under:3786.0 - base:16815.0
+avg acc:0.30377639012786206
+over:4464.0 - under:7518.0 - base:15810.0
+avg acc:0.2421252371916508
+over:7125.0 - under:8386.0 - base:14343.0
+avg acc:-0.08143345185804929
+over:5123.0 - under:7769.0 - base:14061.0
+avg acc:0.08313775691629333
+over:5985.0 - under:7597.0 - base:14778.0
+avg acc:0.08093111381783735
+over:4114.0 - under:9138.0 - base:14652.0
+avg acc:0.09555009555009553
+over:5707.0 - under:10104.0 - base:13398.0
+avg acc:-0.1801015076877146
+over:8156.0 - under:3370.0 - base:15945.0
+avg acc:0.27714016933207897
+over:6835.0 - under:5824.0 - base:15690.0
+avg acc:0.1931803696622052
+over:6795.0 - under:6668.0 - base:14820.0
+avg acc:0.09156545209176792
+accuracy:0.20951683153416473
+
+
+
+Test:
+python3 test.py --model_dir=/Users/liupeng/Documents/dl2tcc/experiment/checkpoint/experiment_1_batch_20 --source_obj=/Users/liupeng/Documents/dl2tcc/experiment/data_shui/val.obj --embedding_ids=0 --save_dir=../experiment/save_dir/experiment_1_batch_20_shui_test/
+
+
+over:8802.0 - under:4646.0 - base:18096.0
+avg acc:0.25685234305923965
+over:7943.0 - under:7383.0 - base:15420.0
+avg acc:0.006095979247730199
+over:8508.0 - under:4130.0 - base:13872.0
+avg acc:0.08895617070357553
+over:7696.0 - under:4419.0 - base:15354.0
+avg acc:0.21095480005210365
+over:7168.0 - under:5971.0 - base:15015.0
+avg acc:0.12494172494172495
+over:6214.0 - under:6359.0 - base:15573.0
+avg acc:0.19264110961279135
+over:5008.0 - under:6307.0 - base:16344.0
+avg acc:0.30769701419481155
+over:5800.0 - under:7768.0 - base:14220.0
+avg acc:0.045850914205344595
+over:8482.0 - under:4942.0 - base:14847.0
+avg acc:0.09584427830538156
+over:6952.0 - under:5330.0 - base:15834.0
+avg acc:0.22432739674118984
+over:7801.0 - under:11702.0 - base:18177.0
+avg acc:-0.07294933157286687
+over:4609.0 - under:6884.0 - base:13497.0
+avg acc:0.14847743943098468
+over:6983.0 - under:5889.0 - base:16761.0
+avg acc:0.23202672871547048
+over:5301.0 - under:8176.0 - base:15279.0
+avg acc:0.11793965573663201
+over:6119.0 - under:9667.0 - base:16743.0
+avg acc:0.057158215373589005
+accuracy:0.1357876292498468
+
+
+
+2: 言字旁   id=2
+
+
+Test:
+
+over:2446.0 - under:12340.0 - base:23970.0
+avg acc:0.38314559866499787
+over:2738.0 - under:11437.0 - base:22761.0
+avg acc:0.37722419928825623
+over:2161.0 - under:12987.0 - base:23001.0
+avg acc:0.34141993826355377
+over:5244.0 - under:9464.0 - base:18618.0
+avg acc:0.2100118165216457
+over:2280.0 - under:12911.0 - base:22176.0
+avg acc:0.3149801587301587
+over:2562.0 - under:10899.0 - base:20523.0
+avg acc:0.34410173951176726
+over:4403.0 - under:9543.0 - base:23376.0
+avg acc:0.40340520191649554
+over:4621.0 - under:9319.0 - base:17970.0
+avg acc:0.2242626599888703
+over:1654.0 - under:16250.0 - base:24876.0
+avg acc:0.2802701398938736
+accuracy:0.31986905030884655
+
+
+Train:
+
+over:3065.0 - under:13182.0 - base:22401.0
+avg acc:0.2747198785768492
+over:3177.0 - under:12569.0 - base:21084.0
+avg acc:0.2531777651299564
+over:4285.0 - under:9950.0 - base:22185.0
+avg acc:0.35835023664638266
+over:1443.0 - under:11711.0 - base:19584.0
+avg acc:0.32832924836601307
+over:5552.0 - under:9620.0 - base:18759.0
+avg acc:0.19121488352257587
+over:3940.0 - under:11595.0 - base:21408.0
+avg acc:0.27433669656203286
+over:3411.0 - under:13169.0 - base:23745.0
+avg acc:0.30174773636555063
+over:5246.0 - under:9514.0 - base:24108.0
+avg acc:0.3877551020408163
+over:3536.0 - under:10386.0 - base:19437.0
+avg acc:0.28373720224314447
+over:1621.0 - under:12913.0 - base:22452.0
+avg acc:0.35266345982540526
+over:3422.0 - under:10316.0 - base:21243.0
+avg acc:0.3532928494092171
+over:3329.0 - under:10814.0 - base:17799.0
+avg acc:0.20540479802236078
+over:2807.0 - under:12082.0 - base:18795.0
+avg acc:0.20782122905027933
+over:1863.0 - under:14191.0 - base:23853.0
+avg acc:0.32696096927011276
+over:2901.0 - under:11757.0 - base:20559.0
+avg acc:0.2870275791624106
+over:2954.0 - under:12007.0 - base:22980.0
+avg acc:0.34895561357702354
+over:6921.0 - under:7162.0 - base:21615.0
+avg acc:0.3484617164006477
+over:8008.0 - under:6532.0 - base:21762.0
+avg acc:0.331862880249977
+over:3391.0 - under:10601.0 - base:20499.0
+avg acc:0.3174301185423679
+over:1759.0 - under:12793.0 - base:22962.0
+avg acc:0.36625729466074386
+over:4652.0 - under:11853.0 - base:24111.0
+avg acc:0.31545767492016097
+over:4757.0 - under:11008.0 - base:21822.0
+avg acc:0.2775639263128953
+over:4075.0 - under:12453.0 - base:23271.0
+avg acc:0.2897597868591809
+over:5726.0 - under:9613.0 - base:20088.0
+avg acc:0.2364097968936678
+over:3412.0 - under:10533.0 - base:19059.0
+avg acc:0.26832467600608634
+over:4422.0 - under:9524.0 - base:21624.0
+avg acc:0.3550684424713282
+over:3575.0 - under:10444.0 - base:25995.0
+avg acc:0.46070398153491054
+over:6719.0 - under:8664.0 - base:21771.0
+avg acc:0.29341784943273164
+over:2868.0 - under:12088.0 - base:20454.0
+avg acc:0.26879827906521947
+over:7182.0 - under:7853.0 - base:20529.0
+avg acc:0.2676214136100151
+over:3521.0 - under:12273.0 - base:21330.0
+avg acc:0.2595405532114393
+over:2311.0 - under:12066.0 - base:24201.0
+avg acc:0.40593363910582203
+over:5977.0 - under:9438.0 - base:24897.0
+avg acc:0.38084909828493396
+over:4364.0 - under:11808.0 - base:22602.0
+avg acc:0.28448809839837186
+over:593.0 - under:13661.0 - base:26394.0
+avg acc:0.4599530196256725
+over:3372.0 - under:11240.0 - base:23331.0
+avg acc:0.3737087994513737
+over:3544.0 - under:12901.0 - base:22146.0
+avg acc:0.25742797796441796
+over:4969.0 - under:8499.0 - base:21741.0
+avg acc:0.3805252748263649
+over:3981.0 - under:12821.0 - base:22272.0
+avg acc:0.24559985632183912
+over:7873.0 - under:8271.0 - base:18996.0
+avg acc:0.15013687092019368
+over:2438.0 - under:11013.0 - base:24579.0
+avg acc:0.4527442125391594
+over:3234.0 - under:12606.0 - base:22041.0
+avg acc:0.2813393221723153
+over:4570.0 - under:11787.0 - base:22308.0
+avg acc:0.2667652859960552
+over:5453.0 - under:9872.0 - base:20910.0
+avg acc:0.26709708273553323
+over:4402.0 - under:11355.0 - base:25362.0
+avg acc:0.3787161895749547
+over:2220.0 - under:12051.0 - base:24270.0
+avg acc:0.41199011124845486
+over:3374.0 - under:10846.0 - base:22938.0
+avg acc:0.3800680094166885
+over:7204.0 - under:6574.0 - base:20829.0
+avg acc:0.3385184118296606
+over:5481.0 - under:9489.0 - base:24039.0
+avg acc:0.3772619493323349
+over:4517.0 - under:11972.0 - base:21903.0
+avg acc:0.247180751495229
+over:2028.0 - under:13464.0 - base:27123.0
+avg acc:0.4288242451056299
+over:5303.0 - under:9222.0 - base:21780.0
+avg acc:0.3331037649219467
+over:3061.0 - under:11764.0 - base:23541.0
+avg acc:0.37024765303088225
+over:3330.0 - under:8899.0 - base:20517.0
+avg acc:0.40395769361992495
+over:4502.0 - under:11697.0 - base:24870.0
+avg acc:0.34865299557700036
+over:4188.0 - under:11392.0 - base:22566.0
+avg acc:0.30958078525214927
+over:2431.0 - under:13324.0 - base:24123.0
+avg acc:0.3468888612527463
+over:2182.0 - under:13569.0 - base:21183.0
+avg acc:0.25643204456403723
+over:2245.0 - under:13002.0 - base:25077.0
+avg acc:0.3919926625991945
+over:4616.0 - under:11715.0 - base:20337.0
+avg acc:0.19698087230171613
+over:2379.0 - under:14180.0 - base:22146.0
+avg acc:0.2522803215027545
+over:2192.0 - under:12195.0 - base:22458.0
+avg acc:0.35938195743165025
+over:4756.0 - under:10598.0 - base:18291.0
+avg acc:0.160570772511071
+over:4493.0 - under:10891.0 - base:22764.0
+avg acc:0.32419609910384817
+over:3626.0 - under:10338.0 - base:21387.0
+avg acc:0.3470800018702951
+accuracy:0.3163484358434727
+
+
+
+
+
+
+
+
+
+cGAN experiment
+
+
+1. Create data set
+
+
+500 fix testing set
+
+python3 font2image.py --char_dir=./charset/char_test_500.txt --src_font=./fontset/fangzhengkaisc.TTF --dst_font=./fontset/qigongscfont.TTF --sample_dir=../experiment/data.500.test/
+
+
+1. 1000 training set
+python3 font2image.py --char_dir=./charset/char_1000.txt --src_font=./fontset/fangzhengkaisc.TTF --dst_font=./fontset/qigongscfont.TTF --sample_dir=../experiment/data.1000/
+
+2. 2000 training set
+python3 font2image.py --char_dir=./charset/char_2000.txt --src_font=./fontset/fangzhengkaisc.TTF --dst_font=./fontset/qigongscfont.TTF --sample_dir=../experiment/data.2000/
+
+3. 3000 training set
+python3 font2image.py --char_dir=./charset/char_3000.txt --src_font=./fontset/fangzhengkaisc.TTF --dst_font=./fontset/qigongscfont.TTF --sample_dir=../experiment/data.3000/
+
+4. 4000 training set
+python3 font2image.py --char_dir=./charset/char_4000.txt --src_font=./fontset/fangzhengkaisc.TTF --dst_font=./fontset/qigongscfont.TTF --sample_dir=../experiment/data.4000/
+
+
+
+2. Package data
+
+python3 package.py --dir=../experiment/data.500.test/ --save_dir=../experiment/data.500.test/ --split_ratio=1.0
+
+
+python3 package.py --dir=../experiment/data.1000/ --save_dir=../experiment/data.1000/ --split_ratio=0.0
+python3 package.py --dir=../experiment/data.2000/ --save_dir=../experiment/data.2000/ --split_ratio=0.0
+python3 package.py --dir=../experiment/data.3000/ --save_dir=../experiment/data.3000/ --split_ratio=0.0
+python3 package.py --dir=../experiment/data.4000/ --save_dir=../experiment/data.4000/ --split_ratio=0.0
+
+
+
+
+
+
+experiment id = 6
+
+train set: 1000
+test set:500
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=6 --epoch=100 --batch_size=40 --sample_steps=25 > experiment_id_6_batch_size_40 &
+
+
+
+experiment id  = 7
+
+trainset 4000
+
+test set: 500
+
+
+
+
+experiment id = 8:
+
+train 4000
+test 500
+
+modified some function of cgan net
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=8 --epoch=150 --batch_size=40 --sample_steps=100 > experiment_id_8_batch_size_40 &
+
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=8 --epoch=150 --batch_size=40 --sample_steps=100 > experiment_id_8_batch_size_40 &
+
+
+
+
+experiment id =9 :
+
+the original algorithm of cgan experiments
+train 4000
+test 500
+
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=9 --epoch=100 --batch_size=40 --sample_steps=100 > experiment_id_9_batch_size_40 &
+
+
+
+experiment id: 10
+python3 train.py --experiment_dir=../experiment/ --experiment_id=10 --epoch=1 --batch_size=40 --sample_steps=100 
+
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=10 --epoch=100 --batch_size=20 --sample_steps=100 > experiment_id_10_batch_size_40 &
+
+
+
+g_loss optimize
+
+
+
+
+
+g_l1_loss optimize
+
+
+
+
+python3 package.py --dir=../experiment/simkai_italic --save_dir=../experiment/simkai_italic --split_ratio=0.0
+
+
+
+
+
+experiment id = 11:
+
+cgan
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=11 --epoch=200 --batch_size=40 --sample_steps=75 > experiment_id_11_batch_size_40 &
+
+
+experiment id = 12:
+wgan
+
+
+
+id = 13:
+cgan 100 epoch
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=13 --epoch=200 --batch_size=40 --sample_steps=75 > experiment_id_13_batch_size_40 &
+
+python3 train.py --experiment_dir=../experiment/ --experiment_id=13 --epoch=10 --batch_size=40 --sample_steps=75
+
+
+id = 14
+
+cgan_1
+
+python3 train.py --experiment_dir=../experiment/ --experiment_id=14 --epoch=1 --batch_size=40 --sample_steps=75
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=14 --epoch=200 --batch_size=40 --sample_steps=75 > experiment_id_14_batch_size_40 &
+
+
+ID = 15
+
+wgan
+
+nohup python3 train_wgan.py --experiment_dir=../experiment/ --experiment_id=15 --epoch=200 --batch_size=40 --sample_steps=75 > experiment_id_15_batch_size_40 &
+
+
+python3 train.py --experiment_dir=../experiment/ --experiment_id=16 --epoch=10 --batch_size=40 --sample_steps=150
+
+
+
+python3 train.py --experiment_dir=../experiment/ --experiment_id=16 --epoch=10 --batch_size=40 --sample_steps=150
+
+
+
+
+ID = 16 
+
+gray   6772 data set cgan
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=16 --epoch=200 --batch_size=40 --sample_steps=150 > experiment_id_16_batch_size_40 &
+
+
+
+ID = 17
+
+add augment and no target data
+
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=17 --epoch=200 --batch_size=40 --sample_steps=150 > experiment_id_17_batch_size_40 &
+
+ID=18
+
+cgan add real_B_generated 
+
+nohup python3 train.py --experiment_dir=../experiment/ --experiment_id=18 --epoch=200 --batch_size=40 --sample_steps=150 > ./log/experiment_id_18_batch_size_40 &
+
+
+
