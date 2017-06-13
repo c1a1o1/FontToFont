@@ -220,10 +220,6 @@ def update(event):
 
 lbox.bind("<Double-Button-1>", func=update)
 
-
-
-
-
 while True:
     try:
         root.mainloop()
