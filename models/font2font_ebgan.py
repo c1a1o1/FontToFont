@@ -168,27 +168,6 @@ class Font2Font(object):
             output = tf.nn.tanh(d8)  # scale to (-1, 1)
             return output
 
-    # def discriminator(self, image, is_training, reuse=False):
-    #     with tf.variable_scope("discriminator"):
-    #         if reuse:
-    #             tf.get_variable_scope().reuse_variables()
-    #         # [batch,256,256,1] -> [batch,128,128,64]
-    #         h0 = lrelu(conv2d(image, self.discriminator_dim, scope="d_h0_conv"))
-    #         # [batch,128,128,64] -> [batch,64,64,64*2]
-    #         h1 = lrelu(batch_norm(conv2d(h0, self.discriminator_dim * 2, scope="d_h1_conv"),
-    #                               is_training, scope="d_bn_1"))
-    #         # [batch,64,64,64*2] -> [batch,32,32,64*4]
-    #         h2 = lrelu(batch_norm(conv2d(h1, self.discriminator_dim * 4, scope="d_h2_conv"),
-    #                               is_training, scope="d_bn_2"))
-    #         # [batch,32,32,64*4] -> [batch,31,31,64*8]
-    #         h3 = lrelu(batch_norm(conv2d(h2, self.discriminator_dim * 8, sh=1, sw=1, scope="d_h3_conv"),
-    #                               is_training, scope="d_bn_3"))
-    #
-    #         # real or fake binary loss
-    #         fc1 = fc(tf.reshape(h3, [self.batch_size, -1]), 1, scope="d_fc1")
-    #
-    #         return tf.sigmoid(fc1), fc1
-
     def build_model(self, is_training=True, no_target_source=False):
         real_data = tf.placeholder(tf.float32,
                                    [self.batch_size, self.input_width, self.input_width,
@@ -211,8 +190,6 @@ class Font2Font(object):
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
-        # real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
-        # fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
         real_D = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D = self.discriminator(fake_AB, is_training=is_training, reuse=True)
 
@@ -230,19 +207,9 @@ class Font2Font(object):
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
-        # binary real/fake loss
-        # d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
-        #                                                                      labels=tf.ones_like(real_D)))
-        # d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-        #                                                                      labels=tf.zeros_like(fake_D)))
-        #
-        # # maximize the chance generator fool the discriminator
-        # cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-        #                                                                     labels=tf.ones_like(fake_D)))
-
         # mean squared errors
         mse_real = tf.reduce_mean(tf.square(real_D - real_B), reduction_indices=[1, 2, 3])
-        mse_fake = tf.reduce_mean(tf.square(fake_D - fake_D), reduction_indices=[1, 2, 3])
+        mse_fake = tf.reduce_mean(tf.square(fake_D - real_B), reduction_indices=[1, 2, 3])
 
         d_loss = mse_real + tf.maximum(100 - mse_fake, 0)
 
