@@ -215,28 +215,28 @@ class Font2Font(object):
 
         g_loss = l1_loss + const_loss + tv_loss + mse_fake
 
-        if no_target_source:
-            # no_target source are examples that don't have the corresponding target images
-            # however, except L1 loss, we can compute category loss, binary loss and constant losses with those examples
-            # it is useful when discriminator get saturated and d_loss drops to near zero
-            # those data could be used as additional source of losses to break the saturation
-            no_target_A = no_target_data[:, :, :, self.input_filters:self.input_filters + self.output_filters]
-            no_target_B, encoded_no_target_A = self.generator(no_target_A, is_training=is_training, reuse=True)
-
-            no_target_AB = tf.concat([no_target_A, no_target_B], 3)
-
-            no_target_D = self.discriminator(no_target_AB, is_training=is_training, reuse=True)
-
-            encoded_no_target_B = self.encoder(no_target_B, is_training, reuse=True)[0]
-
-            no_target_const_loss = tf.reduce_mean(
-                tf.square(encoded_no_target_A - encoded_no_target_B)) * self.Lconst_penalty
-
-            no_mse_fake = tf.reduce_mean(tf.square(no_target_D - no_target_B))
-
-            d_loss = tf.maximum(100 - no_mse_fake, 0)
-
-            g_loss = no_mse_fake + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
+        # if no_target_source:
+        #     # no_target source are examples that don't have the corresponding target images
+        #     # however, except L1 loss, we can compute category loss, binary loss and constant losses with those examples
+        #     # it is useful when discriminator get saturated and d_loss drops to near zero
+        #     # those data could be used as additional source of losses to break the saturation
+        #     no_target_A = no_target_data[:, :, :, self.input_filters:self.input_filters + self.output_filters]
+        #     no_target_B, encoded_no_target_A = self.generator(no_target_A, is_training=is_training, reuse=True)
+        #
+        #     no_target_AB = tf.concat([no_target_A, no_target_B], 3)
+        #
+        #     no_target_D = self.discriminator(no_target_AB, is_training=is_training, reuse=True)
+        #
+        #     encoded_no_target_B = self.encoder(no_target_B, is_training, reuse=True)[0]
+        #
+        #     no_target_const_loss = tf.reduce_mean(
+        #         tf.square(encoded_no_target_A - encoded_no_target_B)) * self.Lconst_penalty
+        #
+        #     no_mse_fake = tf.reduce_mean(tf.square(no_target_D - no_target_B))
+        #
+        #     d_loss = tf.maximum(100 - no_mse_fake, 0)
+        #
+        #     g_loss = no_mse_fake + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
 
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
