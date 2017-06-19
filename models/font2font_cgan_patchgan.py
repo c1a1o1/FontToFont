@@ -8,6 +8,7 @@ import scipy.misc as misc
 import os
 import time
 from collections import namedtuple
+
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
 from util.uitls import scale_back, merge, save_concat_images
@@ -574,6 +575,7 @@ class Font2Font(object):
 
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
+        source_len = min(10, source_len)
 
         source_iter = source_provider.get_iter(source_len)
 
