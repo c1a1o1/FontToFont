@@ -521,34 +521,57 @@ class Font2Font(object):
                 batch_images = batch
                 # Optimize D
 
+                # _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                #                                             summary_handle.d_merged],
+                #                                            feed_dict={real_data: batch_images,
+                #                                                       learning_rate: current_lr,
+                #                                                       no_target_data: batch_images
+                #                                                       })
+                # # Optimize G
+                # _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
+                #                                 feed_dict={
+                #                                     real_data: batch_images,
+                #                                     learning_rate: current_lr,
+                #                                     no_target_data: batch_images
+                #                                 })
+
                 _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
                                                             summary_handle.d_merged],
                                                            feed_dict={real_data: batch_images,
-                                                                      learning_rate: current_lr,
-                                                                      no_target_data: batch_images
+                                                                      learning_rate: current_lr
                                                                       })
                 # Optimize G
                 _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
                                                 feed_dict={
                                                     real_data: batch_images,
-                                                    learning_rate: current_lr,
-                                                    no_target_data: batch_images
+                                                    learning_rate: current_lr
                                                 })
                 # magic move to Optimize G again
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
-                _, batch_g_loss,  \
-                const_loss,  l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
+                # _, batch_g_loss,  \
+                # const_loss,  l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
+                #                                                          loss_handle.g_loss,
+                #                                                          loss_handle.const_loss,
+                #
+                #                                                          loss_handle.l1_loss,
+                #                                                          loss_handle.tv_loss,
+                #                                                          summary_handle.g_merged],
+                #                                                         feed_dict={ real_data: batch_images,
+                #                                                                     learning_rate: current_lr,
+                #                                                                     no_target_data: batch_images
+                #                                                         })
+                _, batch_g_loss, \
+                const_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
                                                                          loss_handle.g_loss,
                                                                          loss_handle.const_loss,
 
                                                                          loss_handle.l1_loss,
                                                                          loss_handle.tv_loss,
                                                                          summary_handle.g_merged],
-                                                                        feed_dict={ real_data: batch_images,
-                                                                                    learning_rate: current_lr,
-                                                                                    no_target_data: batch_images
-                                                                        })
+                                                                        feed_dict={real_data: batch_images,
+                                                                                   learning_rate: current_lr
+                                                                                   })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
                              "const_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
