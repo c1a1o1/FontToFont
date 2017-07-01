@@ -27,7 +27,7 @@ def main(_):
         source_provider = InjectDataProvider(args.source_obj)
         source_len = len(source_provider.data.examples)
 
-        source_len = min(10, source_len)
+        # source_len = min(10, source_len)
 
         model = Font2Font(batch_size=source_len)
         model.register_session(sess)
