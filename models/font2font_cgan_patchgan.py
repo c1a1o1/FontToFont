@@ -575,6 +575,8 @@ class Font2Font(object):
 
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
+
+        total_count = source_len
         source_len = min(10, source_len)
 
         source_iter = source_provider.get_iter(source_len)
@@ -637,5 +639,5 @@ class Font2Font(object):
             # last batch
             save_imgs(batch_buffer, count, threshold)
 
-        accuracy = accuracy / count
+        accuracy = accuracy / total_count
         print("Average accruacy: %2.5d" % accuracy)
