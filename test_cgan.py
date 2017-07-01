@@ -6,7 +6,7 @@ import tensorflow as tf
 import os
 import argparse
 
-from models.font2font_cgan_patchgan import Font2Font
+from models.font2font_cgan import Font2Font
 from util.dataset import InjectDataProvider
 
 parser = argparse.ArgumentParser(description="test for the cgan model")
