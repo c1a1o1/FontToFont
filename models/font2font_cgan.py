@@ -568,6 +568,9 @@ class Font2Font(object):
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
 
+        total_count = source_len
+        source_len = min(10, source_len)
+
         source_iter = source_provider.get_iter(source_len)
 
         tf.global_variables_initializer().run()
@@ -583,6 +586,7 @@ class Font2Font(object):
         count = 0
         threshold = 0.1
         batch_buffer = list()
+        accuracy = 0.0
         for source_imgs in source_iter:
             fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
             img_shape = fake_imgs.shape
@@ -600,7 +604,6 @@ class Font2Font(object):
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
 
-            accuracy = 0.0
             for bt in range(fake_imgs_reshape.shape[0]):
                 over = 0.0
                 less = 0.0
@@ -615,8 +618,6 @@ class Font2Font(object):
                 print("over:{} - under:{} - base:{}".format(over, less, base))
                 accuracy += 1 - ((over + less) / base)
                 print("avg acc:{}".format(1 - ((over + less) / base)))
-            accuracy = accuracy / fake_imgs_reshape.shape[0]
-            print("accuracy:{}".format(accuracy))
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
@@ -629,5 +630,8 @@ class Font2Font(object):
         if batch_buffer:
             # last batch
             save_imgs(batch_buffer, count, threshold)
+
+        accuracy = accuracy / total_count
+        print("Average accruacy: %.5f" % accuracy)
 
 
