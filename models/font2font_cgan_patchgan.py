@@ -575,7 +575,7 @@ class Font2Font(object):
 
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
-        source_len = min(10, source_len)
+        # source_len = min(10, source_len)
 
         source_iter = source_provider.get_iter(source_len)
 
