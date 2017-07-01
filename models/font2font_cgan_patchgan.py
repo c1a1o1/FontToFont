@@ -640,4 +640,4 @@ class Font2Font(object):
             save_imgs(batch_buffer, count, threshold)
 
         accuracy = accuracy / total_count
-        print("Average accruacy: %2.5f" % accuracy)
+        print("Average accruacy: %.5f" % accuracy)
