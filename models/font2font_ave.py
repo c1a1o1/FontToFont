@@ -17,7 +17,7 @@ from util.uitls import scale_back, merge, save_concat_images
 LossHandle = namedtuple("LossHandle", ["g_loss", "l1_loss", "tv_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data", "no_target_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
-SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
+SummaryHandle = namedtuple("SummaryHandle", ["g_merged"])
 
 
 class Font2Font(object):
