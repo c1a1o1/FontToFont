@@ -531,6 +531,7 @@ class Font2Font(object):
         if batch_buffer:
             # last batch
             save_imgs(batch_buffer, count, threshold)
+            print("saved experiment id:{}".format(self.experiment_id))
 
         accuracy = accuracy / total_count
         print("Average accruacy: %.5f" % accuracy)
