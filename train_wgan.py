@@ -55,10 +55,9 @@ def main(_):
         model.register_session(sess)
         model.build_model(is_training=True)
 
-        model.train(lr=args.lr, epoch=args.epoch, resume=args.resume,
-                    schedule=args.schedule, freeze_encoder=args.freeze_encoder,
-                    sample_steps=args.sample_steps, checkpoint_steps=args.checkpoint_steps,
-                    clamp=args.clamp, d_iters=args.d_iters)
+        model.train(lr=args.lr, epoch=args.epoch, resume=args.resume, schedule=args.schedule,
+                    freeze_encoder=args.freeze_encoder, sample_steps=args.sample_steps,
+                    checkpoint_steps=args.checkpoint_steps, clamp=args.clamp, d_iters=args.d_iters)
 
     end = datetime.now()
     print("Ending time: {}".format(end))
