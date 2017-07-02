@@ -550,17 +550,6 @@ class Font2Font(object):
                     print("Checkpoint: save checkpoint step %d" % counter)
                     self.checkpoint(saver, counter)
 
-        # valiation the models
-        # print("val.examples len:{}".format(len(data_provider.val.examples)))
-        # accuracy = 0.0
-        # iters = int(len(data_provider.val.examples) / self.batch_size)
-        # for it in range(iters):
-        #     val_batch_iter = data_provider.get_val(size=self.batch_size)
-        #     accuracy += self.validate_last_model(val_batch_iter)
-        #     break
-        # accuracy /= iters
-        # print("Avg accuracy: %.5f" % accuracy)
-
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
         self.checkpoint(saver, counter)
