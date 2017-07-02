@@ -306,20 +306,20 @@ class Font2Font(object):
     def generate_fake_samples(self, input_images):
         input_handle, loss_handle, eval_handle, summary_handle = self.retrieve_handles()
         fake_images, real_images, \
-        d_loss, g_loss, l1_loss = self.sess.run([eval_handle.generator,
+        g_loss, l1_loss = self.sess.run([eval_handle.generator,
                                                  eval_handle.target,
-                                                 loss_handle.d_loss,
+
                                                  loss_handle.g_loss,
                                                  loss_handle.l1_loss],
                                                 feed_dict={
                                                     input_handle.real_data: input_images
                                                 })
-        return fake_images, real_images, d_loss, g_loss, l1_loss
+        return fake_images, real_images, g_loss, l1_loss
 
     def validate_model(self, images, epoch, step):
 
-        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
+        fake_imgs, real_imgs, g_loss, l1_loss = self.generate_fake_samples(images)
+        print("Sample: g_loss: %.5f, l1_loss: %.5f" % (g_loss, l1_loss))
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -335,8 +335,8 @@ class Font2Font(object):
         misc.imsave(sample_img_path, merged_pair)
 
     def validate_last_model(self, images):
-        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
+        fake_imgs, real_imgs, g_loss, l1_loss = self.generate_fake_samples(images)
+        print("Sample: g_loss: %.5f, l1_loss: %.5f" % (g_loss, l1_loss))
 
         # fake_imgs, real_imgs = self.translation_gravity_center(fake_imgs, real_imgs)
 
@@ -468,7 +468,7 @@ class Font2Font(object):
         tf.set_random_seed(1234)
 
         learning_rate = tf.placeholder(tf.float32, name="learning_rate")
-        d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
+        # d_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.d_loss, var_list=d_vars)
         g_optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss_handle.g_loss, var_list=g_vars)
 
         tf.global_variables_initializer().run()
@@ -506,27 +506,26 @@ class Font2Font(object):
                 batch_images = batch
                 # Optimize D
 
-                _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
-                                                            summary_handle.d_merged],
-                                                           feed_dict={real_data: batch_images,
-                                                                      learning_rate: current_lr,
-                                                                      no_target_data: batch_images
-                                                                      })
+                # _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                #                                             summary_handle.d_merged],
+                #                                            feed_dict={real_data: batch_images,
+                #                                                       learning_rate: current_lr,
+                #                                                       no_target_data: batch_images
+                #                                                       })
                 # Optimize G
-                _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
-                                                feed_dict={
-                                                    real_data: batch_images,
-                                                    learning_rate: current_lr,
-                                                    no_target_data: batch_images
-                                                })
+                # _, batch_g_loss = self.sess.run([g_optimizer, loss_handle.g_loss],
+                #                                 feed_dict={
+                #                                     real_data: batch_images,
+                #                                     learning_rate: current_lr,
+                #                                     no_target_data: batch_images
+                #                                 })
                 # magic move to Optimize G again
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
                 _, batch_g_loss,  \
-                const_loss, cheat_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
+                l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
                                                                          loss_handle.g_loss,
-                                                                         loss_handle.const_loss,
-                                                                         loss_handle.cheat_loss,
+
                                                                          loss_handle.l1_loss,
                                                                          loss_handle.tv_loss,
                                                                          summary_handle.g_merged],
@@ -535,11 +534,11 @@ class Font2Font(object):
                                                                                     no_target_data: batch_images
                                                                         })
                 passed = time.time() - start_time
-                log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
-                             "const_loss: %.5f, cheat_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
-                print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss,
-                                    const_loss, cheat_loss, l1_loss, tv_loss))
-                summary_writer.add_summary(d_summary, counter)
+                log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, g_loss: %.5f, " + \
+                             "l1_loss: %.5f, tv_loss: %.5f"
+                print(log_format % (ei, bid, total_batches, passed, batch_g_loss,
+                                    l1_loss, tv_loss))
+                # summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
                 if counter % sample_steps == 0:
@@ -577,7 +576,7 @@ class Font2Font(object):
         batch_buffer = list()
         accuracy = 0.0
         for source_imgs in source_iter:
-            fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
+            fake_imgs, real_imgs, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
             img_shape = fake_imgs.shape
 
             fake_imgs_reshape = np.reshape(np.array(fake_imgs),
