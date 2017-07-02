@@ -480,7 +480,7 @@ class Font2Font(object):
         self.restore_model(saver, model_dir)
 
         def save_imgs(imgs, count, threshold):
-            p = os.path.join(save_dir, "inferred_%04d_%.2f.png" % (count, threshold))
+            p = os.path.join(save_dir, "inferred_id_%s_%04d_%.2f.png" % (self.experiment_id, count, threshold))
             save_concat_images(imgs, img_path=p)
             print("generated images saved at %s" % p)
 
