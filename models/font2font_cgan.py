@@ -458,7 +458,7 @@ class Font2Font(object):
             save_imgs(batch_buffer, count)
 
     def train(self, lr=0.0002, epoch=100, schedule=10, resume=True,
-              freeze_encoder=False, sample_steps=50, checkpoint_steps=500):
+              freeze_encoder=False, sample_steps=50, checkpoint_steps=50):
         g_vars, d_vars = self.retrieve_trainable_vars(freeze_encoder=freeze_encoder)
         input_handle, loss_handle, _, summary_handle = self.retrieve_handles()
 
@@ -542,17 +542,17 @@ class Font2Font(object):
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
-                if counter % sample_steps == 0:
+                if ei % sample_steps == 0:
                     # sample the current model states with val data
                     self.validate_model(val_batch_iter, ei, counter)
 
-                if counter % checkpoint_steps == 0:
-                    print("Checkpoint: save checkpoint step %d" % counter)
-                    self.checkpoint(saver, counter)
+                if ei % checkpoint_steps == 0:
+                    print("Checkpoint: save checkpoint step %d" % ei)
+                    self.checkpoint(saver, ei)
 
         # save the last checkpoint
-        print("Checkpoint: last checkpoint step %d" % counter)
-        self.checkpoint(saver, counter)
+        print("Checkpoint: last checkpoint step %d" % ei)
+        self.checkpoint(saver, ei)
 
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)

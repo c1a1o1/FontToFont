@@ -162,7 +162,10 @@ class Font2Font(object):
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
 
         # binary real/fake loss
-        d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
+        # d_loss_real = tf.reduce_mean(tf.scalar_mul(-1, real_D_logits))
+        # d_loss_fake = tf.reduce_mean(fake_D_logits)
+
+        d_loss_real = tf.reduce_mean(real_D_logits)
         d_loss_fake = tf.reduce_mean(fake_D_logits)
 
         # L1 loss between real and generated images
@@ -172,8 +175,11 @@ class Font2Font(object):
         tv_loss = (tf.nn.l2_loss(fake_B[:, 1:, :, :] - fake_B[:, :width - 1, :, :]) / width
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
-        d_loss = d_loss_real + d_loss_fake
-        g_loss = l1_loss + const_loss + tv_loss
+        # d_loss = d_loss_real + d_loss_fake
+        # g_loss = l1_loss + const_loss + tv_loss + tf.reduce_mean(fake_D_logits)
+
+        d_loss = d_loss_fake - d_loss_real
+        g_loss = tf.reduce_mean(fake_D_logits) + l1_loss + const_loss + tv_loss
 
         d_loss_real_summary = tf.summary.scalar("d_loss_real", d_loss_real)
         d_loss_fake_summary = tf.summary.scalar("d_loss_fake", d_loss_fake)
@@ -373,7 +379,7 @@ class Font2Font(object):
             save_imgs(batch_buffer, count)
 
     def train(self, lr=0.0002, epoch=100, schedule=10, resume=True, freeze_encoder=False, sample_steps=50,
-              checkpoint_steps=500, clamp=0.001, d_iters=3):
+              checkpoint_steps=50, clamp=0.001, d_iters=3):
         g_vars, d_vars = self.retrieve_trainable_vars(freeze_encoder=freeze_encoder)
         input_handle, loss_handle, _, summary_handle = self.retrieve_handles()
 
@@ -458,28 +464,83 @@ class Font2Font(object):
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
-                if counter % sample_steps == 0:
+                if ei % sample_steps == 0:
                     # sample the current model states with val data
                     self.validate_model(val_batch_iter, ei, counter)
 
-                if counter % checkpoint_steps == 0:
-                    print("Checkpoint: save checkpoint step %d" % counter)
-                    self.checkpoint(saver, counter)
-
-        # valiation the models
-        # print("val.examples len:{}".format(len(data_provider.val.examples)))
-        # accuracy = 0.0
-        # iters = int(len(data_provider.val.examples) / self.batch_size)
-        # for it in range(iters):
-        #     val_batch_iter = data_provider.get_val(size=self.batch_size)
-        #     accuracy += self.validate_last_model(val_batch_iter)
-        #     break
-        # accuracy /= iters
-        # print("Avg accuracy: %.5f" % accuracy)
+                if ei % checkpoint_steps == 0:
+                    print("Checkpoint: save checkpoint step %d" % ei)
+                    self.checkpoint(saver, ei)
 
         # save the last checkpoint
-        print("Checkpoint: last checkpoint step %d" % counter)
-        self.checkpoint(saver, counter)
+        print("Checkpoint: last checkpoint step %d" % ei)
+        self.checkpoint(saver, ei)
 
-    def test(self):
-        pass
+    def test(self, source_provider, model_dir, save_dir):
+        source_len = len(source_provider.data.examples)
+
+        total_count = source_len
+        source_len = min(10, source_len)
+
+        source_iter = source_provider.get_iter(source_len)
+
+        tf.global_variables_initializer().run()
+
+        saver = tf.train.Saver(var_list=self.retrieve_generator_vars())
+        self.restore_model(saver, model_dir)
+
+        def save_imgs(imgs, count, threshold):
+            p = os.path.join(save_dir, "inferred_%04d_%.2f.png" % (count, threshold))
+            save_concat_images(imgs, img_path=p)
+            print("generated images saved at %s" % p)
+
+        count = 0
+        threshold = 0.1
+        batch_buffer = list()
+        accuracy = 0.0
+        for source_imgs in source_iter:
+            fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
+            img_shape = fake_imgs.shape
+
+            fake_imgs_reshape = np.reshape(np.array(fake_imgs),
+                                           [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+            real_imgs_reshape = np.reshape(np.array(real_imgs),
+                                           [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+
+            # threshold
+            for bt in range(fake_imgs_reshape.shape[0]):
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape[bt][it] >= threshold:
+                        fake_imgs_reshape[bt][it] = 1.0
+                    else:
+                        fake_imgs_reshape[bt][it] = -1.0
+
+            for bt in range(fake_imgs_reshape.shape[0]):
+                over = 0.0
+                less = 0.0
+                base = 0.0
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
+                        over += 1
+                    if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
+                        less += 1
+                    if real_imgs_reshape[bt][it] != 1.0:
+                        base += 1
+                print("over:{} - under:{} - base:{}".format(over, less, base))
+                accuracy += 1 - ((over + less) / base)
+                print("avg acc:{}".format(1 - ((over + less) / base)))
+
+            fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
+            real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
+            merged_fake_images = merge(scale_back(fake_imgs_reshape), [source_len, 1])
+            merged_real_images = merge(scale_back(real_imgs_reshape), [source_len, 1])
+            merged_pair = np.concatenate([merged_real_images, merged_fake_images], axis=1)
+
+            batch_buffer.append(merged_pair)
+            count += 1
+        if batch_buffer:
+            # last batch
+            save_imgs(batch_buffer, count, threshold)
+
+        accuracy = accuracy / total_count
+        print("Average accruacy: %.5f" % accuracy)
