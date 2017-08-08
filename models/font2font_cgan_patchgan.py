@@ -8,6 +8,7 @@ import scipy.misc as misc
 import os
 import time
 from collections import namedtuple
+import statistics
 
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -600,6 +601,44 @@ class Font2Font(object):
                         fake_imgs_reshape[bt][it] = 1.0
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
+
+            # calculate the GoC and transform of matrix.
+            fake_rows = []
+            fake_columns = []
+            real_rows = []
+            real_columns = []
+            # calculate the goc of fake images
+            for bt in range(fake_imgs_reshape.shape[0]):
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape[bt][it] == -1.0:
+                        fake_rows.append(bt)
+                        fake_columns.append(it)
+
+            for bt in range(real_imgs_reshape.shape[0]):
+                for it in range(real_imgs_reshape.shape[1]):
+                    if real_imgs_reshape[bt][it] == -1.0:
+                        real_rows.append(bt)
+                        real_columns.append(it)
+
+            real_goc_r = int(statistics.mean(real_rows))
+            real_goc_c = int(statistics.mean(real_columns))
+
+            fake_goc_r = int(statistics.mean(fake_rows))
+            fake_goc_c = int(statistics.mean(fake_columns))
+
+            print("real goc:({},{}) fake goc:({},{})".format(real_goc_r,real_goc_c, fake_goc_r, fake_goc_c))
+
+            # translation of the fake images
+            trans_r = real_goc_r - fake_goc_r
+            trans_c = real_goc_c - fake_goc_c
+
+            fake_imgs_reshape_ = fake_imgs_reshape
+
+            for bt in range(fake_imgs_reshape.shape[0]):
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape_[bt][it] == -1.0:
+                        fake_imgs_reshape[bt+trans_r][it+trans_c] = -1.0
+                        fake_imgs_reshape[bt][it] = 1.0  # clean
 
             for bt in range(fake_imgs_reshape.shape[0]):
                 over = 0.0
