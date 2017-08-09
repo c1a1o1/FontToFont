@@ -7,6 +7,7 @@ import numpy as np
 import scipy.misc as misc
 import os
 import time
+from skimage.measure import compare_ssim as ssim
 from collections import namedtuple
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -298,51 +299,6 @@ class Font2Font(object):
         sample_img_path = os.path.join(model_sample_dir, "sample_%02d_%04d.png" % (epoch, step))
         misc.imsave(sample_img_path, merged_pair)
 
-    def validate_last_model(self, images):
-        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
-
-        btn_accuracy = self.calcul_accuracy(fake_imgs, real_imgs)
-        print("Sample accuracy: %.5f" % btn_accuracy)
-        return btn_accuracy
-
-    def calcul_accuracy(self, fake, real):
-        # calculate the average accuracy
-        img_shape = fake.shape
-        fake_imgs_reshape = fake
-        real_imgs_reshape = real
-
-        fake_imgs_reshape = np.reshape(np.array(fake_imgs_reshape),
-                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-        real_imgs_reshape = np.reshape(np.array(real_imgs_reshape),
-                                       [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
-
-        # threshold
-        threshold = 0.0
-        for bt in range(fake_imgs_reshape.shape[0]):
-            for it in range(fake_imgs_reshape.shape[1]):
-                if fake_imgs_reshape[bt][it] >= threshold:
-                    fake_imgs_reshape[bt][it] = 1.0
-                else:
-                    fake_imgs_reshape[bt][it] = -1.0
-
-        accuracy = 0.0
-        for bt in range(fake_imgs_reshape.shape[0]):
-            over = 0.0
-            less = 0.0
-            base = 0.0
-            for it in range(fake_imgs_reshape.shape[1]):
-                if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-                    over += 1
-                if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-                    less += 1
-                if real_imgs_reshape[bt][it] != 1.0:
-                    base += 1
-            accuracy += 1 - ((over + less) / base)
-        accuracy = accuracy / fake_imgs_reshape.shape[0]
-        print("accuracy:{}".format(accuracy))
-        return accuracy
-
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
         saver = tf.train.Saver()
         self.restore_model(saver, model_dir)
@@ -497,7 +453,7 @@ class Font2Font(object):
         count = 0
         threshold = 0.1
         batch_buffer = list()
-        accuracy = 0.0
+
         for source_imgs in source_iter:
             fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
             img_shape = fake_imgs.shape
@@ -507,7 +463,7 @@ class Font2Font(object):
             real_imgs_reshape = np.reshape(np.array(real_imgs),
                                            [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
 
-            # threshold
+            # threshold -- fixed
             for bt in range(fake_imgs_reshape.shape[0]):
                 for it in range(fake_imgs_reshape.shape[1]):
                     if fake_imgs_reshape[bt][it] >= threshold:
@@ -515,20 +471,10 @@ class Font2Font(object):
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
 
+            # ssim structure similar
             for bt in range(fake_imgs_reshape.shape[0]):
-                over = 0.0
-                less = 0.0
-                base = 0.0
-                for it in range(fake_imgs_reshape.shape[1]):
-                    if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-                        over += 1
-                    if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-                        less += 1
-                    if real_imgs_reshape[bt][it] != 1.0:
-                        base += 1
-                print("over:{} - under:{} - base:{}".format(over, less, base))
-                accuracy += 1 - ((over + less) / base)
-                print("avg acc:{}".format(1 - ((over + less) / base)))
+                ssim_diff = ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
+                print("ssim diff:{}".format(ssim_diff))
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
@@ -541,6 +487,3 @@ class Font2Font(object):
         if batch_buffer:
             # last batch
             save_imgs(batch_buffer, count, threshold)
-
-        accuracy = accuracy / total_count
-        print("Average accruacy: %.5f" % accuracy)
