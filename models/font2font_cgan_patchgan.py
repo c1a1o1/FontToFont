@@ -9,6 +9,7 @@ import os
 import time
 from collections import namedtuple
 import statistics
+from skimage.measure import compare_ssim as ssim
 
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -641,19 +642,23 @@ class Font2Font(object):
                         fake_imgs_reshape[bt][it] = 1.0  # clean
 
             for bt in range(fake_imgs_reshape.shape[0]):
-                over = 0.0
-                less = 0.0
-                base = 0.0
-                for it in range(fake_imgs_reshape.shape[1]):
-                    if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
-                        over += 1
-                    if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
-                        less += 1
-                    if real_imgs_reshape[bt][it] != 1.0:
-                        base += 1
-                print("over:{} - under:{} - base:{}".format(over, less, base))
-                accuracy += 1 - ((over + less) / base)
-                print("avg acc:{}".format(1 - ((over + less) / base)))
+                ssim_diff = ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
+                print("ssim diff:{}".format(ssim_diff))
+
+            # for bt in range(fake_imgs_reshape.shape[0]):
+            #     over = 0.0
+            #     less = 0.0
+            #     base = 0.0
+            #     for it in range(fake_imgs_reshape.shape[1]):
+            #         if real_imgs_reshape[bt][it] == 1.0 and fake_imgs_reshape[bt][it] != 1.0:
+            #             over += 1
+            #         if real_imgs_reshape[bt][it] != 1.0 and fake_imgs_reshape[bt][it] == -1.0:
+            #             less += 1
+            #         if real_imgs_reshape[bt][it] != 1.0:
+            #             base += 1
+            #     print("over:{} - under:{} - base:{}".format(over, less, base))
+            #     accuracy += 1 - ((over + less) / base)
+            #     print("avg acc:{}".format(1 - ((over + less) / base)))
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
