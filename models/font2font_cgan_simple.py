@@ -7,7 +7,7 @@ import numpy as np
 import scipy.misc as misc
 import os
 import time
-from skimage.measure import compare_ssim as ssim
+from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_psnr
 from collections import namedtuple
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -587,10 +587,15 @@ class Font2Font(object):
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
 
-            # ssim structure similar
+            # mse, nrmse, ssim and psnr
             for bt in range(fake_imgs_reshape.shape[0]):
-                ssim_diff = ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                print("ssim diff:{}".format(ssim_diff))
+                mse_diff = compare_mse(real_imgs_reshape[bt], fake_imgs_reshape[bt])
+                nrmse_diff = compare_nrmse(real_imgs_reshape[bt], fake_imgs_reshape[bt],
+                                            norm_type="Euclidean")
+                ssim_diff = compare_ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
+                psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
+                print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
+                                                                                ssim_diff, psnr_diff))
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
