@@ -10,6 +10,7 @@ import time
 from collections import namedtuple
 import statistics
 from skimage.measure import compare_ssim as ssim
+import util.mathtools as mathtools
 
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -515,10 +516,11 @@ class Font2Font(object):
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
 
-            # ssim structure similar
+            # ssim structure similar and mse error
             for bt in range(fake_imgs_reshape.shape[0]):
                 ssim_diff = ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                print("ssim diff:{}".format(ssim_diff))
+                mse_diff = mathtools.mse(real_imgs_reshape[bt], fake_imgs_reshape[bt])
+                print("ssim diff:{} | mse diff:{}".format(ssim_diff, mse_diff))
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
