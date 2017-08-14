@@ -69,6 +69,10 @@ def save_concat_images(imgs, img_path):
     misc.imsave(img_path, concated)
 
 
+def save_image(img, img_path):
+    misc.imsave(img_path, img)
+
+
 def compile_frames_to_gif(frame_dir, gif_file):
     frames = sorted(glob.glob(os.path.join(frame_dir, "*.jpg")))
     print(frames)

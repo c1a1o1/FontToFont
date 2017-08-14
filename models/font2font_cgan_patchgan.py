@@ -13,7 +13,7 @@ from skimage.morphology import disk
 from skimage.filters import threshold_otsu, rank
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
-from util.uitls import scale_back, merge, save_concat_images
+from util.uitls import scale_back, merge, save_concat_images, save_image
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
@@ -479,7 +479,6 @@ class Font2Font(object):
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
 
-        total_count = source_len
         source_len = min(10, source_len)
 
         source_iter = source_provider.get_iter(source_len)
@@ -493,6 +492,11 @@ class Font2Font(object):
             p = os.path.join(save_dir, "inferred_%04d_%.2f.png" % (count, threshold))
             save_concat_images(imgs, img_path=p)
             print("generated images saved at %s" % p)
+
+        def save_img(img, mse_diff, nrmse_diff, ssim_diff, psnr_diff):
+            p = os.path.join(save_dir, "cgan_patch%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff, psnr_diff))
+            save_image(img, img_path=p)
+            print("generated ssim: %.4f images saved at %s" % (ssim_diff, p) )
 
         count = 0
         threshold = 0.1
@@ -530,6 +534,16 @@ class Font2Font(object):
                 psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
                                                                                ssim_diff, psnr_diff))
+                # save the images with ssim > 0.8 and ssim < 0.5
+                if ssim_diff > 0.8 or ssim_diff < 0.5:
+                    fk_reshape = np.reshape(fake_imgs_reshape[bt], (1, fake_imgs.shape[1], fake_imgs.shape[2],
+                                                                    fake_imgs.shape[3]))
+                    rl_reshape = np.reshape(real_imgs_reshape[bt], (1, real_imgs.shape[1], real_imgs.shape[2],
+                                                                    real_imgs.shape[3]))
+                    fk_reshape = merge(scale_back(fk_reshape), [1, 1])
+                    rl_reshape = merge(scale_back(rl_reshape), [1, 1])
+                    pair = np.concatenate([rl_reshape, fk_reshape], axis=1)
+                    save_img(pair, mse_diff, nrmse_diff, ssim_diff, psnr_diff)
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
