@@ -11,7 +11,7 @@ from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_ps
 from collections import namedtuple
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
-from util.uitls import scale_back, merge, save_concat_images
+from util.uitls import scale_back, merge, save_concat_images, save_image
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
@@ -265,92 +265,6 @@ class Font2Font(object):
         sample_img_path = os.path.join(model_sample_dir, "sample_%02d_%04d.png" % (epoch, step))
         misc.imsave(sample_img_path, merged_pair)
 
-    def validate_last_model(self, images):
-        fake_imgs, real_imgs, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Sample: g_loss: %.5f, l1_loss: %.5f" % (g_loss, l1_loss))
-
-        btn_accuracy = self.calcul_accuracy(real_imgs, real_imgs)
-        print("Sample accuracy: %.5f" % btn_accuracy)
-        return btn_accuracy
-
-    def calcul_accuracy(self, fake, real):
-
-        real_ = tf.image.rgb_to_grayscale(real)
-        fake_ = tf.image.rgb_to_grayscale(fake)
-
-        print("real_ shape:{} fake_ shape:{}".format(real_.shape, fake_.shape))
-
-        threshold = 0.0
-        assert real_.shape == fake_.shape
-        img_shape = real_.shape  # [batch, h, w, 1]
-        avg_accuracy = 0.0
-        for bt in range(img_shape[0]):
-            base = .0
-            over = .0
-            less = .0
-            for h in range(img_shape[1]):
-                for w in range(img_shape[2]):
-                    if fake_[bt][h][w] < threshold and real_[bt][h][w] < threshold:
-                        base += 1.0
-                    if fake_[bt][h][w] >= threshold and real_[bt][h][w] < threshold:
-                        less += 1.0
-                    if fake_[bt][h][w] < threshold and real_[bt][h][w] >= threshold:
-                        over += 1.0
-            avg_accuracy += 1 - (less + over) / base
-
-        avg_accuracy /= img_shape[0]
-
-        return avg_accuracy
-
-
-    def translation_gravity_center(self, fake, real):
-
-        assert fake.shape == real.shape
-        shape = fake.shape
-
-        fake_ = tf.image.rgb_to_grayscale(fake)
-        real_ = tf.image.rgb_to_grayscale(real)
-
-        for bt in range(shape[0]):
-            # batch_size
-            ROWS = []
-            COLS = []
-            for c in range(shape[1]):
-                for r in range(shape[2]):
-                    if real_[bt][c][r] < 0.0:
-                        ROWS.append(r)
-                        COLS.append(c)
-
-            real_center_c = int(np.mean(COLS))
-            real_center_r = int(np.mean(ROWS))
-
-            ROWS = []
-            COLS = []
-            for c in range(shape[1]):
-                for r in range(shape[2]):
-                    if fake_[bt][c][r] < 0:
-                        ROWS.append(r)
-                        COLS.append(c)
-
-            fake_center_c = int(np.mean(COLS))
-            fake_center_r = int(np.mean(ROWS))
-
-            # translation vector
-            tran_vector_c = fake_center_c - real_center_c
-            tran_vector_r = fake_center_r - real_center_r
-
-            # translation
-            for c in range(shape[1]):
-                if c+tran_vector_c < 0 or c+tran_vector_c > shape[1]:
-                    continue
-                for r in range(shape[2]):
-                    if r+tran_vector_r < 0 or r+tran_vector_r > shape[2]:
-                        continue
-                    if fake[bt][c][r] < 0.0:
-                        fake[bt][c+tran_vector_c][r+tran_vector_r] = fake[bt][c][r]
-
-        return fake, real
-
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
         saver = tf.train.Saver()
         self.restore_model(saver, model_dir)
@@ -485,6 +399,12 @@ class Font2Font(object):
             save_concat_images(imgs, img_path=p)
             print("generated images saved at %s" % p)
 
+        def save_img(img, mse_diff, nrmse_diff, ssim_diff, psnr_diff):
+            p = os.path.join(save_dir,
+                             "ave-%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff, psnr_diff))
+            save_image(img, img_path=p)
+            print("generated ssim: %.4f images saved at %s" % (ssim_diff, p))
+
         count = 0
         threshold = 0.1
         batch_buffer = list()
@@ -497,6 +417,8 @@ class Font2Font(object):
                                            [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
             real_imgs_reshape = np.reshape(np.array(real_imgs),
                                            [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+            fake_imgs_reshape_saved = fake_imgs_reshape
+            real_imgs_reshape_saved = real_imgs_reshape
 
             # threshold -- fixed
             for bt in range(fake_imgs_reshape.shape[0]):
@@ -515,6 +437,17 @@ class Font2Font(object):
                 psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
                                                                                 ssim_diff, psnr_diff))
+
+                # save the images with ssim > 0.8 and ssim < 0.5
+                if ssim_diff > 0.8 or ssim_diff < 0.5:
+                    fk_reshape = np.reshape(fake_imgs_reshape_saved[bt], (1, fake_imgs.shape[1], fake_imgs.shape[2],
+                                                                    fake_imgs.shape[3]))
+                    rl_reshape = np.reshape(real_imgs_reshape_saved[bt], (1, real_imgs.shape[1], real_imgs.shape[2],
+                                                                    real_imgs.shape[3]))
+                    fk_reshape = merge(scale_back(fk_reshape), [1, 1])
+                    rl_reshape = merge(scale_back(rl_reshape), [1, 1])
+                    pair = np.concatenate([rl_reshape, fk_reshape], axis=1)
+                    save_img(pair, mse_diff, nrmse_diff, ssim_diff, psnr_diff)
 
             fake_imgs_reshape = np.reshape(fake_imgs_reshape, fake_imgs.shape)
             real_imgs_reshape = np.reshape(real_imgs_reshape, real_imgs.shape)
