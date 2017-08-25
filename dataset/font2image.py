@@ -2,9 +2,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-from imp import reload
 import argparse
-import sys
 import numpy as np
 import os
 from PIL import Image

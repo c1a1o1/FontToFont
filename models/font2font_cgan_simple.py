@@ -8,6 +8,7 @@ import scipy.misc as misc
 import os
 import time
 from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_psnr
+from sklearn.neighbors.kde import KernelDensity
 from collections import namedtuple
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -602,8 +603,15 @@ class Font2Font(object):
                                             norm_type="Euclidean")
                 ssim_diff = compare_ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
-                                                                                ssim_diff, psnr_diff))
+                # print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
+                #                                                                 ssim_diff, psnr_diff))
+                # kde
+                r_reshape = np.reshape(real_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
+                f_reshape = np.reshape(fake_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
+                kde = KernelDensity(kernel="gaussian", bandwidth=1).fit(r_reshape)
+                kde_score_fake = kde.score_samples(f_reshape)
+                kde_score_real = kde.score_samples(r_reshape)
+                print("fake: %0.3f real: %0.3f" % (kde_score_fake, kde_score_real))
 
                 # save the images with ssim > 0.8 and ssim < 0.5
                 if ssim_diff > 0.8 or ssim_diff < 0.5:

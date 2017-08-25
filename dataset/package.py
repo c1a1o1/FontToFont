@@ -7,7 +7,6 @@ import glob
 import os
 import pickle
 import random
-import cv2
 
 
 def pickle_examples(paths, train_path, val_path, train_val_split=0.1):

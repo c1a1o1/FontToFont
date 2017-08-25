@@ -10,6 +10,7 @@ import time
 from collections import namedtuple
 from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_psnr
 from skimage.morphology import disk
+from sklearn.neighbors.kde import KernelDensity
 from skimage.filters import threshold_otsu, rank
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
@@ -479,7 +480,7 @@ class Font2Font(object):
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
 
-        source_len = min(10, source_len)
+        source_len = min(16, source_len)
 
         source_iter = source_provider.get_iter(source_len)
 
@@ -496,7 +497,15 @@ class Font2Font(object):
         def save_img(img, mse_diff, nrmse_diff, ssim_diff, psnr_diff):
             p = os.path.join(save_dir, "cgan_patch%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff, psnr_diff))
             save_image(img, img_path=p)
-            print("generated ssim: %.4f images saved at %s" % (ssim_diff, p) )
+            # print("generated ssim: %.4f images saved at %s" % (ssim_diff, p) )
+
+        def save_batch_samples(imgs, count, threshold):
+            p = os.path.join(save_dir, "test_sample id:%04d_count:%04d_%.2f.png" % (self.experiment_id, count, threshold))
+            try:
+                save_concat_images(imgs, img_path=p)
+                # print("test batch samples saved!")
+            except Exception as e:
+                print(e)
 
         count = 0
         threshold = 0.1
@@ -504,6 +513,14 @@ class Font2Font(object):
 
         for source_imgs in source_iter:
             fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
+
+            # discriminator loss of training and testing data set
+
+            # discri_train_loss = tf.reduce_mean(self.discriminator(real_imgs, is_training=False))
+            # discri_test_loss = tf.reduce_mean(self.discriminator(fake_imgs, is_training=False))
+            #
+            # print("D train loss:%.5f test loss:%.5f" % (discri_train_loss, discri_test_loss))
+
             img_shape = fake_imgs.shape
 
             fake_imgs_reshape = np.reshape(np.array(fake_imgs),
@@ -535,8 +552,16 @@ class Font2Font(object):
                 nrmse_diff = compare_nrmse(real_imgs_reshape[bt], fake_imgs_reshape[bt], norm_type="Euclidean")
                 ssim_diff = compare_ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
-                                                                               ssim_diff, psnr_diff))
+                # print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
+                #                                                                ssim_diff, psnr_diff))
+                # kde
+                r_reshape = np.reshape(real_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
+                f_reshape = np.reshape(fake_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
+                kde = KernelDensity(kernel="gaussian", bandwidth=1).fit(r_reshape)
+                kde_score_fake = kde.score_samples(f_reshape)
+                kde_score_real = kde.score_samples(r_reshape)
+                print("fake: %0.3f real: %0.3f" % (kde_score_fake, kde_score_real))
+
                 # save the images with ssim > 0.8 and ssim < 0.5
                 if ssim_diff > 0.8 or ssim_diff < 0.5:
                     fk_reshape = np.reshape(fake_imgs_reshape_saved[bt], (1, fake_imgs.shape[1], fake_imgs.shape[2],
@@ -553,6 +578,8 @@ class Font2Font(object):
             merged_fake_images = merge(scale_back(fake_imgs_reshape), [source_len, 1])
             merged_real_images = merge(scale_back(real_imgs_reshape), [source_len, 1])
             merged_pair = np.concatenate([merged_real_images, merged_fake_images], axis=1)
+            merged_pair_splited = np.split(merged_pair, 4)
+            save_batch_samples(merged_pair_splited, count, threshold)
 
             batch_buffer.append(merged_pair)
             count += 1
