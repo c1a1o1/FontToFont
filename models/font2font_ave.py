@@ -395,19 +395,24 @@ class Font2Font(object):
         self.restore_model(saver, model_dir)
 
         def save_imgs(imgs, count, threshold):
-            p = os.path.join(save_dir, "inferred_id_%s_%04d_%.2f.png" % (self.experiment_id, count, threshold))
+            p = os.path.join(save_dir, "ave_inferred_id_%s_%04d_%.2f.png" % (self.experiment_id, count, threshold))
             save_concat_images(imgs, img_path=p)
-            print("generated images saved at %s" % p)
+            print("ave generated images saved at %s" % p)
 
         def save_img(img, mse_diff, nrmse_diff, ssim_diff, psnr_diff):
             p = os.path.join(save_dir,
                              "ave-%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff, psnr_diff))
             save_image(img, img_path=p)
-            print("generated ssim: %.4f images saved at %s" % (ssim_diff, p))
+            print("ave_generated ssim: %.4f images saved at %s" % (ssim_diff, p))
+
+        def save_single_img(img, count, bt):
+            p = os.path.join(save_dir, "ave_single_%d_%d.png" % (count, bt))
+            save_image(img, img_path=p)
+            print("ave single sample id: %d _ %d saved" % (count, bt))
 
         count = 0
         threshold = 0.1
-        batch_buffer = list()
+        # batch_buffer = list()
 
         for source_imgs in source_iter:
             fake_imgs, real_imgs, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
@@ -427,6 +432,28 @@ class Font2Font(object):
                         fake_imgs_reshape[bt][it] = 1.0
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
+
+            # valid pixels
+            for bt in range(fake_imgs_reshape.shape[0]):
+                p_over = 0
+                p_less = 0
+                p_valid = 0
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape[bt][it] == 1.0 and real_imgs_reshape[bt][it] != 1.0:
+                        p_over += 1
+                    if fake_imgs_reshape[bt][it] != 1.0 and real_imgs_reshape[bt][it] == 1.0:
+                        p_less += 1
+                    if real_imgs_reshape[bt][it] == 1.0:
+                        p_valid += 1
+
+                error_p = 1.0 * (p_over + p_less) / p_valid
+                print("ave count: %d sample %d pixel error: %.05f" % (count, bt, error_p))
+
+            # save ave sample images
+            for bt in range(fake_imgs_reshape.shape[0]):
+                fk_reshape = np.reshape(fake_imgs_reshape_saved[bt],(fake_imgs.shape[1], fake_imgs.shape[2]))
+                save_single_img(fk_reshape, count, bt)
+
 
             # mse, nrmse, ssim and psnr
             for bt in range(fake_imgs_reshape.shape[0]):
@@ -455,11 +482,11 @@ class Font2Font(object):
             merged_real_images = merge(scale_back(real_imgs_reshape), [source_len, 1])
             merged_pair = np.concatenate([merged_real_images, merged_fake_images], axis=1)
 
-            batch_buffer.append(merged_pair)
+            # batch_buffer.append(merged_pair)
             count += 1
-        if batch_buffer:
-            # last batch
-            save_imgs(batch_buffer, count, threshold)
+        # if batch_buffer:
+        #     # last batch
+        #     save_imgs(batch_buffer, count, threshold)
             print("saved experiment id:{}".format(self.experiment_id))
 
 

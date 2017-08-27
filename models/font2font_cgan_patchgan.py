@@ -500,26 +500,24 @@ class Font2Font(object):
             # print("generated ssim: %.4f images saved at %s" % (ssim_diff, p) )
 
         def save_batch_samples(imgs, count, threshold):
-            p = os.path.join(save_dir, "test_sample id:%04d_count:%04d_%.2f.png" % (self.experiment_id, count, threshold))
+            p = os.path.join(save_dir, "cgan_test_sample id:%04d_count:%04d_%.2f.png" % (self.experiment_id, count, threshold))
             try:
                 save_concat_images(imgs, img_path=p)
                 # print("test batch samples saved!")
             except Exception as e:
                 print(e)
 
+        def save_single_img(img, count, bt):
+            p = os.path.join(save_dir, "cgan_single_%d_%d.png" % (count, bt))
+            save_image(img, img_path=p)
+            print("cgan single sample id: %d _ %d saved" % (count, bt))
+
         count = 0
         threshold = 0.1
-        batch_buffer = list()
+        # batch_buffer = list()
 
         for source_imgs in source_iter:
             fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
-
-            # discriminator loss of training and testing data set
-
-            # discri_train_loss = tf.reduce_mean(self.discriminator(real_imgs, is_training=False))
-            # discri_test_loss = tf.reduce_mean(self.discriminator(fake_imgs, is_training=False))
-            #
-            # print("D train loss:%.5f test loss:%.5f" % (discri_train_loss, discri_test_loss))
 
             img_shape = fake_imgs.shape
 
@@ -533,6 +531,12 @@ class Font2Font(object):
 
             # threshold -- fixed
             for bt in range(fake_imgs_reshape.shape[0]):
+                # statistics mean of generator output
+                g_mean = np.mean(np.array(fake_imgs_reshape))
+                g_min = np.min(np.array(fake_imgs_reshape))
+                g_max = np.max(np.array(fake_imgs_reshape))
+                print("g_mean : %.05f g_min: %.05f g_max:%.05f" % (g_mean, g_min, g_max))
+
                 for it in range(fake_imgs_reshape.shape[1]):
                     if fake_imgs_reshape[bt][it] >= threshold:
                         fake_imgs_reshape[bt][it] = 1.0
@@ -546,14 +550,35 @@ class Font2Font(object):
             # local_otsu = rank.otsu(fake_imgs_reshape, selem)
             # fake_imgs_reshape >= local_otsu
 
+            # valid pixels
+            for bt in range(fake_imgs_reshape.shape[0]):
+                p_over = 0
+                p_less = 0
+                p_valid = 0
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape[bt][it] == 1.0 and real_imgs_reshape[bt][it] != 1.0:
+                        p_over += 1
+                    if fake_imgs_reshape[bt][it] != 1.0 and real_imgs_reshape[bt][it] == 1.0:
+                        p_less += 1
+                    if real_imgs_reshape[bt][it] == 1.0:
+                        p_valid += 1
+
+                error_p = 1.0 * (p_over + p_less) / p_valid
+                print("cgan count %d sample %d pixel error: %.05f" % (count, bt, error_p))
+
+            # save ave sample images
+            for bt in range(fake_imgs_reshape.shape[0]):
+                fk_reshape = np.reshape(fake_imgs_reshape_saved[bt], (fake_imgs.shape[1], fake_imgs.shape[2]))
+                save_single_img(fk_reshape, count, bt)
+
             # mse, nrmse, ssim and psnr
             for bt in range(fake_imgs_reshape.shape[0]):
                 mse_diff = compare_mse(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 nrmse_diff = compare_nrmse(real_imgs_reshape[bt], fake_imgs_reshape[bt], norm_type="Euclidean")
                 ssim_diff = compare_ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                # print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
-                #                                                                ssim_diff, psnr_diff))
+                print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
+                                                                               ssim_diff, psnr_diff))
                 # kde
                 r_reshape = np.reshape(real_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
                 f_reshape = np.reshape(fake_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
@@ -581,8 +606,8 @@ class Font2Font(object):
             merged_pair_splited = np.split(merged_pair, 4)
             save_batch_samples(merged_pair_splited, count, threshold)
 
-            batch_buffer.append(merged_pair)
+            # batch_buffer.append(merged_pair)
             count += 1
-        if batch_buffer:
-            # last batch
-            save_imgs(batch_buffer, count, threshold)
+        # if batch_buffer:
+        #     # last batch
+        #     save_imgs(batch_buffer, count, threshold)
