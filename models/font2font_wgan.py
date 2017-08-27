@@ -497,8 +497,8 @@ class Font2Font(object):
                     if real_imgs_reshape[bt][it] == 1.0:
                         p_valid += 1
 
-                error_p = 1.0 * (p_valid - p_over - p_less) / p_valid
-                print("wgan count: %d sample %d pixel error: %.05f" % (count, bt, error_p))
+                p_accuracy = 1.0 * (p_valid - p_over - p_less) / p_valid
+                print("wgan count: %d sample %d pixel accuracy: %.05f" % (count, bt, p_accuracy))
 
             # save ave sample images
             for bt in range(fake_imgs_reshape.shape[0]):
