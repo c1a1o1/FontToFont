@@ -495,12 +495,14 @@ class Font2Font(object):
             print("generated images saved at %s" % p)
 
         def save_img(img, mse_diff, nrmse_diff, ssim_diff, psnr_diff):
-            p = os.path.join(save_dir, "cgan_patch%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff, psnr_diff))
+            p = os.path.join(save_dir, "cgan_patch%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff,
+                                                                              psnr_diff))
             save_image(img, img_path=p)
             # print("generated ssim: %.4f images saved at %s" % (ssim_diff, p) )
 
         def save_batch_samples(imgs, count, threshold):
-            p = os.path.join(save_dir, "cgan_test_sample id:%04d_count:%04d_%.2f.png" % (self.experiment_id, count, threshold))
+            p = os.path.join(save_dir, "cgan_test_sample id:%04d_count:%04d_%.2f.png" % (self.experiment_id, count,
+                                                                                         threshold))
             try:
                 save_concat_images(imgs, img_path=p)
                 # print("test batch samples saved!")
