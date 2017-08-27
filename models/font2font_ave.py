@@ -446,7 +446,7 @@ class Font2Font(object):
                     if real_imgs_reshape[bt][it] == 1.0:
                         p_valid += 1
 
-                error_p = 1.0 * (p_over + p_less) / p_valid
+                error_p = 1.0 * (p_valid - p_over - p_less) / p_valid
                 print("ave count: %d sample %d pixel error: %.05f" % (count, bt, error_p))
 
             # save ave sample images
