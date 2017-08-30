@@ -465,13 +465,21 @@ class Font2Font(object):
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
-                if counter % sample_steps == 0:
-                    # sample the current model states with val data
-                    self.validate_model(val_batch_iter, ei, counter)
+                # if counter % sample_steps == 0:
+                #     # sample the current model states with val data
+                #     self.validate_model(val_batch_iter, ei, counter)
 
                 if counter % checkpoint_steps == 0:
                     print("Checkpoint: save checkpoint step %d" % counter)
                     self.checkpoint(saver, counter)
+
+            # validation in each epoch
+            self.validate_model(val_batch_iter, ei, counter)
+
+            # save checkpoints in each 50 epoch
+            if ei % 50 == 0:
+                print("Checkpoint: save checkpoint epoch %d" % ei)
+                self.checkpoint(saver, counter)
 
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
