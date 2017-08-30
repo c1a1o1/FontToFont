@@ -193,11 +193,11 @@ class Font2Font(object):
 
         # binary real/fake loss
         d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
-                                                                             labels=tf.ones_like(real_D_logits)))
+                                                                             labels=tf.ones_like(real_D)))
         d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-                                                                             labels=tf.zeros_like(fake_D_logits)))
+                                                                             labels=tf.zeros_like(fake_D)))
         d_loss_real_generated = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits_generated,
-                                                                             labels=tf.ones_like(real_D_logits_generated)))
+                                                                             labels=tf.ones_like(real_D_generated)))
 
         # maximize the chance generator fool the discriminator
         cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
