@@ -192,11 +192,11 @@ class Font2Font(object):
                    + tf.nn.l2_loss(fake_B[:, :, 1:, :] - fake_B[:, :, :width - 1, :]) / width) * self.Ltv_penalty
 
         # binary real/fake loss
-        d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits,
+        d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D,
                                                                              labels=tf.ones_like(real_D)))
-        d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+        d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D,
                                                                              labels=tf.zeros_like(fake_D)))
-        d_loss_real_generated = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits_generated,
+        d_loss_real_generated = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_generated,
                                                                              labels=tf.ones_like(real_D_generated)))
 
         # maximize the chance generator fool the discriminator
