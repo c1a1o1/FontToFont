@@ -181,8 +181,8 @@ class Font2Font(object):
         # this loss assume that generated imaged and real image
         # should reside in the same space and close to each other
         # encoded_fake_B = self.encoder(fake_B, is_training, reuse=True)[0]
-        # const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
-        const_loss = 0.00
+        const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
+
 
         # L1 loss between real and generated images
         l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
@@ -201,9 +201,8 @@ class Font2Font(object):
         #                                                                      labels=tf.ones_like(real_D_generated)))
 
         # maximize the chance generator fool the discriminator
-        # cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-        #                                                                     labels=tf.ones_like(fake_D)))
-        cheat_loss = 0.00
+        cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+                                                                            labels=tf.ones_like(fake_D)))
 
         # d_loss = d_loss_real + d_loss_fake + d_loss_real_generated
         #
@@ -234,8 +233,8 @@ class Font2Font(object):
                                                                                       labels=tf.zeros_like(
                                                                                           no_target_D)))
 
-            # cheat_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
-            #                                                                      labels=tf.ones_like(no_target_D)))
+            cheat_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
+                                                                                 labels=tf.ones_like(no_target_D)))
 
             d_loss = d_loss_real + d_loss_fake + d_loss_no_target
             g_loss = cheat_loss / 2.0 + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
