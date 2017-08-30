@@ -7,16 +7,17 @@ import numpy as np
 import scipy.misc as misc
 import os
 import time
-from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_psnr
-from sklearn.neighbors.kde import KernelDensity
 from collections import namedtuple
+from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_psnr
+
+# from sklearn.neighbors.kde import KernelDensity
 from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
 from util.dataset import TrainDataProvider, InjectDataProvider
 from util.uitls import scale_back, merge, save_concat_images, save_image
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
-LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "l1_loss", "cheat_loss", "tv_loss"])
+LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "l1_loss", "tv_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data", "no_target_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -162,19 +163,25 @@ class Font2Font(object):
 
         fake_B, encoded_real_A = self.generator(real_A, is_training=is_training)
 
+        real_B_generated, _ = self.generator(real_B, is_training=is_training, reuse=True)
+
         real_AB = tf.concat([real_A, real_B], 3)
         fake_AB = tf.concat([real_A, fake_B], 3)
+        # real_AB_generated = tf.concat([real_A, real_B_generated], 3)
 
         # Note it is not possible to set reuse flag back to False
         # initialize all variables before setting reuse to True
         real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
+        # real_D_generated, real_D_logits_generated = self.discriminator(real_AB_generated, is_training=is_training,
+        #                                                                reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
         # should reside in the same space and close to each other
         # encoded_fake_B = self.encoder(fake_B, is_training, reuse=True)[0]
         # const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
+
 
         # L1 loss between real and generated images
         l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
@@ -189,14 +196,20 @@ class Font2Font(object):
                                                                              labels=tf.ones_like(real_D)))
         d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
                                                                              labels=tf.zeros_like(fake_D)))
+        # d_loss_real_generated = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits_generated,
+        #                                                                      labels=tf.ones_like(real_D_generated)))
 
         # maximize the chance generator fool the discriminator
-        cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
-                                                                            labels=tf.ones_like(fake_D)))
+        # cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
+        #                                                                     labels=tf.ones_like(fake_D)))
+
+        # d_loss = d_loss_real + d_loss_fake + d_loss_real_generated
+        #
+        # g_loss = l1_loss + const_loss + tv_loss + cheat_loss
 
         d_loss = d_loss_real + d_loss_fake
 
-        g_loss = l1_loss + tv_loss + cheat_loss
+        g_loss = l1_loss + tv_loss
 
         if no_target_source:
             # no_target source are examples that don't have the corresponding target images
@@ -210,30 +223,36 @@ class Font2Font(object):
 
             no_target_D, no_target_D_logits = self.discriminator(no_target_AB, is_training=is_training, reuse=True)
 
+            encoded_no_target_B = self.encoder(no_target_B, is_training, reuse=True)[0]
+
+            no_target_const_loss = tf.reduce_mean(
+                tf.square(encoded_no_target_A - encoded_no_target_B)) * self.Lconst_penalty
+
             d_loss_no_target = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
                                                                                       labels=tf.zeros_like(
                                                                                           no_target_D)))
 
-            cheat_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
-                                                                                 labels=tf.ones_like(no_target_D)))
+            # cheat_loss += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=no_target_D_logits,
+            #                                                                      labels=tf.ones_like(no_target_D)))
 
             d_loss = d_loss_real + d_loss_fake + d_loss_no_target
-            g_loss = cheat_loss / 2.0 + l1_loss + tv_loss
+            # g_loss = cheat_loss / 2.0 + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
+            g_loss = l1_loss + tv_loss
 
         l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
-        cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
+        # const_loss_summary = tf.summary.scalar("const_loss", const_loss)
+        # cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
         d_loss_summary = tf.summary.scalar("d_loss", d_loss)
         g_loss_summary = tf.summary.scalar("g_loss", g_loss)
         tv_loss_summary = tf.summary.scalar("tv_loss", tv_loss)
         d_merged_summary = tf.summary.merge([d_loss_summary])
-        g_merged_summary = tf.summary.merge([cheat_loss_summary, l1_loss_summary, g_loss_summary,
+        g_merged_summary = tf.summary.merge([l1_loss_summary, g_loss_summary,
                                              tv_loss_summary])
 
         # expose useful nodes in the graph as handles globally
         input_handle = InputHandle(real_data=real_data, no_target_data=no_target_data)
 
-        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, cheat_loss=cheat_loss,
-                                 l1_loss=l1_loss, tv_loss=tv_loss)
+        loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, l1_loss=l1_loss, tv_loss=tv_loss)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 
@@ -330,94 +349,6 @@ class Font2Font(object):
         sample_img_path = os.path.join(model_sample_dir, "sample_%02d_%04d.png" % (epoch, step))
         misc.imsave(sample_img_path, merged_pair)
 
-    def validate_last_model(self, images):
-        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
-
-        # fake_imgs, real_imgs = self.translation_gravity_center(fake_imgs, real_imgs)
-
-        btn_accuracy = self.calcul_accuracy(real_imgs, real_imgs)
-        print("Sample accuracy: %.5f" % btn_accuracy)
-        return btn_accuracy
-
-    def calcul_accuracy(self, fake, real):
-
-        real_ = tf.image.rgb_to_grayscale(real)
-        fake_ = tf.image.rgb_to_grayscale(fake)
-
-        print("real_ shape:{} fake_ shape:{}".format(real_.shape, fake_.shape))
-
-        threshold = 0.0
-        assert real_.shape == fake_.shape
-        img_shape = real_.shape  # [batch, h, w, 1]
-        avg_accuracy = 0.0
-        for bt in range(img_shape[0]):
-            base = .0
-            over = .0
-            less = .0
-            for h in range(img_shape[1]):
-                for w in range(img_shape[2]):
-                    if fake_[bt][h][w] < threshold and real_[bt][h][w] < threshold:
-                        base += 1.0
-                    if fake_[bt][h][w] >= threshold and real_[bt][h][w] < threshold:
-                        less += 1.0
-                    if fake_[bt][h][w] < threshold and real_[bt][h][w] >= threshold:
-                        over += 1.0
-            avg_accuracy += 1 - (less + over) / base
-
-        avg_accuracy /= img_shape[0]
-
-        return avg_accuracy
-
-
-    def translation_gravity_center(self, fake, real):
-
-        assert fake.shape == real.shape
-        shape = fake.shape
-
-        fake_ = tf.image.rgb_to_grayscale(fake)
-        real_ = tf.image.rgb_to_grayscale(real)
-
-        for bt in range(shape[0]):
-            # batch_size
-            ROWS = []
-            COLS = []
-            for c in range(shape[1]):
-                for r in range(shape[2]):
-                    if real_[bt][c][r] < 0.0:
-                        ROWS.append(r)
-                        COLS.append(c)
-
-            real_center_c = int(np.mean(COLS))
-            real_center_r = int(np.mean(ROWS))
-
-            ROWS = []
-            COLS = []
-            for c in range(shape[1]):
-                for r in range(shape[2]):
-                    if fake_[bt][c][r] < 0:
-                        ROWS.append(r)
-                        COLS.append(c)
-
-            fake_center_c = int(np.mean(COLS))
-            fake_center_r = int(np.mean(ROWS))
-
-            # translation vector
-            tran_vector_c = fake_center_c - real_center_c
-            tran_vector_r = fake_center_r - real_center_r
-
-            # translation
-            for c in range(shape[1]):
-                if c+tran_vector_c < 0 or c+tran_vector_c > shape[1]:
-                    continue
-                for r in range(shape[2]):
-                    if r+tran_vector_r < 0 or r+tran_vector_r > shape[2]:
-                        continue
-                    if fake[bt][c][r] < 0.0:
-                        fake[bt][c+tran_vector_c][r+tran_vector_r] = fake[bt][c][r]
-
-        return fake, real
-
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
         saver = tf.train.Saver()
         self.restore_model(saver, model_dir)
@@ -454,7 +385,7 @@ class Font2Font(object):
             save_imgs(batch_buffer, count)
 
     def train(self, lr=0.0002, epoch=100, schedule=10, resume=True,
-              freeze_encoder=False, sample_steps=500, checkpoint_steps=5000):
+              freeze_encoder=False, sample_steps=1500, checkpoint_steps=15000):
         g_vars, d_vars = self.retrieve_trainable_vars(freeze_encoder=freeze_encoder)
         input_handle, loss_handle, _, summary_handle = self.retrieve_handles()
 
@@ -518,10 +449,8 @@ class Font2Font(object):
                 # magic move to Optimize G again
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
-                _, batch_g_loss,  \
-                cheat_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
+                _, batch_g_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
                                                                          loss_handle.g_loss,
-                                                                         loss_handle.cheat_loss,
                                                                          loss_handle.l1_loss,
                                                                          loss_handle.tv_loss,
                                                                          summary_handle.g_merged],
@@ -531,19 +460,26 @@ class Font2Font(object):
                                                                         })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
-                             "cheat_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
-                print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss,
-                                    cheat_loss, l1_loss, tv_loss))
+                             "l1_loss: %.5f, tv_loss: %.5f"
+                print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss, l1_loss, tv_loss))
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
-                if counter % sample_steps == 0:
-                    # sample the current model states with val data
-                    self.validate_model(val_batch_iter, ei, counter)
+                # if counter % sample_steps == 0:
+                #     # sample the current model states with val data
+                #     self.validate_model(val_batch_iter, ei, counter)
 
                 if counter % checkpoint_steps == 0:
                     print("Checkpoint: save checkpoint step %d" % counter)
                     self.checkpoint(saver, counter)
+
+            # validation in each epoch
+            self.validate_model(val_batch_iter, ei, counter)
+
+            # save checkpoints in each 50 epoch
+            if ei % 50 == 0:
+                print("Checkpoint: save checkpoint epoch %d" % ei)
+                self.checkpoint(saver, counter)
 
         # save the last checkpoint
         print("Checkpoint: last checkpoint step %d" % counter)
@@ -552,8 +488,7 @@ class Font2Font(object):
     def test(self, source_provider, model_dir, save_dir):
         source_len = len(source_provider.data.examples)
 
-        total_count = source_len
-        source_len = min(10, source_len)
+        source_len = min(16, source_len)
 
         source_iter = source_provider.get_iter(source_len)
 
@@ -568,50 +503,99 @@ class Font2Font(object):
             print("generated images saved at %s" % p)
 
         def save_img(img, mse_diff, nrmse_diff, ssim_diff, psnr_diff):
-            p = os.path.join(save_dir,
-                             "cgan_simple-%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff, psnr_diff))
+            p = os.path.join(save_dir, "cgan_patch%.4f-%.4f-%.4f-%.4f.png" % (ssim_diff, mse_diff, nrmse_diff,
+                                                                              psnr_diff))
             save_image(img, img_path=p)
-            print("generated ssim: %.4f images saved at %s" % (ssim_diff, p))
+            # print("generated ssim: %.4f images saved at %s" % (ssim_diff, p) )
+
+        def save_batch_samples(imgs, count, threshold):
+            p = os.path.join(save_dir, "cgan_test_sample id:%04d_count:%04d_%.2f.png" % (self.experiment_id, count,
+                                                                                         threshold))
+            try:
+                save_concat_images(imgs, img_path=p)
+                # print("test batch samples saved!")
+            except Exception as e:
+                print(e)
+
+        def save_single_img(img, count, bt):
+            p = os.path.join(save_dir, "cgan_single_%d_%d.png" % (count, bt))
+            save_image(img, img_path=p)
+            print("cgan single sample id: %d _ %d saved" % (count, bt))
 
         count = 0
         threshold = 0.1
-        batch_buffer = list()
+        # batch_buffer = list()
 
         for source_imgs in source_iter:
             fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
+
             img_shape = fake_imgs.shape
 
             fake_imgs_reshape = np.reshape(np.array(fake_imgs),
                                            [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
             real_imgs_reshape = np.reshape(np.array(real_imgs),
                                            [img_shape[0], img_shape[1] * img_shape[2] * img_shape[3]])
+
             fake_imgs_reshape_saved = fake_imgs_reshape
             real_imgs_reshape_saved = real_imgs_reshape
 
             # threshold -- fixed
             for bt in range(fake_imgs_reshape.shape[0]):
+                # statistics mean of generator output
+                g_mean = np.mean(np.array(fake_imgs_reshape))
+                g_min = np.min(np.array(fake_imgs_reshape))
+                g_max = np.max(np.array(fake_imgs_reshape))
+                print("g_mean : %.05f g_min: %.05f g_max:%.05f" % (g_mean, g_min, g_max))
+
                 for it in range(fake_imgs_reshape.shape[1]):
                     if fake_imgs_reshape[bt][it] >= threshold:
                         fake_imgs_reshape[bt][it] = 1.0
                     else:
                         fake_imgs_reshape[bt][it] = -1.0
 
+            # otsu threshold
+            # radius = 15
+            # selem = disk(radius)
+            #
+            # local_otsu = rank.otsu(fake_imgs_reshape, selem)
+            # fake_imgs_reshape >= local_otsu
+
+            # valid pixels
+            for bt in range(fake_imgs_reshape.shape[0]):
+                p_over = 0
+                p_less = 0
+                p_valid = 0
+                for it in range(fake_imgs_reshape.shape[1]):
+                    if fake_imgs_reshape[bt][it] == 1.0 and real_imgs_reshape[bt][it] != 1.0:
+                        p_over += 1
+                    if fake_imgs_reshape[bt][it] != 1.0 and real_imgs_reshape[bt][it] == 1.0:
+                        p_less += 1
+                    if real_imgs_reshape[bt][it] == 1.0:
+                        p_valid += 1
+
+                p_accuracy = 1.0 * (p_valid - p_over - p_less) / p_valid
+                print("cgan count %d sample %d pixel accuracy: %.05f" % (count, bt, p_accuracy))
+
+            # save ave sample images
+            for bt in range(fake_imgs_reshape.shape[0]):
+                fk_reshape = np.reshape(fake_imgs_reshape_saved[bt], (fake_imgs.shape[1], fake_imgs.shape[2]))
+                save_single_img(fk_reshape, count, bt)
+
             # mse, nrmse, ssim and psnr
             for bt in range(fake_imgs_reshape.shape[0]):
                 mse_diff = compare_mse(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                nrmse_diff = compare_nrmse(real_imgs_reshape[bt], fake_imgs_reshape[bt],
-                                            norm_type="Euclidean")
+                nrmse_diff = compare_nrmse(real_imgs_reshape[bt], fake_imgs_reshape[bt], norm_type="Euclidean")
                 ssim_diff = compare_ssim(real_imgs_reshape[bt], fake_imgs_reshape[bt])
                 psnr_diff = compare_psnr(real_imgs_reshape[bt], fake_imgs_reshape[bt])
-                # print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
-                #                                                                 ssim_diff, psnr_diff))
+                print("mse diff:{} | nrmse diff:{} | ssim:{} | psnr:{}".format(mse_diff, nrmse_diff,
+                                                                               ssim_diff, psnr_diff))
                 # kde
                 r_reshape = np.reshape(real_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
                 f_reshape = np.reshape(fake_imgs_reshape[bt], [1, img_shape[1] * img_shape[2] * img_shape[3]])
-                kde = KernelDensity(kernel="gaussian", bandwidth=1).fit(r_reshape)
-                kde_score_fake = kde.score_samples(f_reshape)
-                kde_score_real = kde.score_samples(r_reshape)
-                print("fake: %0.3f real: %0.3f" % (kde_score_fake, kde_score_real))
+                # kde = KernelDensity(kernel="gaussian", bandwidth=1).fit(r_reshape)
+                # kde_score_fake = kde.score_samples(f_reshape)
+                # kde_score_real = kde.score_samples(r_reshape)
+                # print("fake: %0.3f real: %0.3f" % (kde_score_fake, kde_score_real))
 
                 # save the images with ssim > 0.8 and ssim < 0.5
                 if ssim_diff > 0.8 or ssim_diff < 0.5:
@@ -629,9 +613,11 @@ class Font2Font(object):
             merged_fake_images = merge(scale_back(fake_imgs_reshape), [source_len, 1])
             merged_real_images = merge(scale_back(real_imgs_reshape), [source_len, 1])
             merged_pair = np.concatenate([merged_real_images, merged_fake_images], axis=1)
+            merged_pair_splited = np.split(merged_pair, 4)
+            save_batch_samples(merged_pair_splited, count, threshold)
 
-            batch_buffer.append(merged_pair)
+            # batch_buffer.append(merged_pair)
             count += 1
-        if batch_buffer:
-            # last batch
-            save_imgs(batch_buffer, count, threshold)
+        # if batch_buffer:
+        #     # last batch
+        #     save_imgs(batch_buffer, count, threshold)
