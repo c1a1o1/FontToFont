@@ -174,15 +174,14 @@ class Font2Font(object):
         # initialize all variables before setting reuse to True
         real_D, real_D_logits = self.discriminator(real_AB, is_training=is_training, reuse=False)
         fake_D, fake_D_logits = self.discriminator(fake_AB, is_training=is_training, reuse=True)
-        # real_D_generated, real_D_logits_generated = self.discriminator(real_AB_generated, is_training=is_training,
-        #                                                                reuse=True)
+        real_D_generated, real_D_logits_generated = self.discriminator(real_AB_generated, is_training=is_training,
+                                                                       reuse=True)
 
         # encoding constant loss
         # this loss assume that generated imaged and real image
         # should reside in the same space and close to each other
         encoded_fake_B = self.encoder(fake_B, is_training, reuse=True)[0]
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
-
 
         # L1 loss between real and generated images
         l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
@@ -197,20 +196,16 @@ class Font2Font(object):
                                                                              labels=tf.ones_like(real_D)))
         d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
                                                                              labels=tf.zeros_like(fake_D)))
-        # d_loss_real_generated = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits_generated,
-        #                                                                      labels=tf.ones_like(real_D_generated)))
+        d_loss_real_generated = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=real_D_logits_generated,
+                                                                             labels=tf.ones_like(real_D_generated)))
 
         # maximize the chance generator fool the discriminator
         cheat_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=fake_D_logits,
                                                                             labels=tf.ones_like(fake_D)))
 
-        # d_loss = d_loss_real + d_loss_fake + d_loss_real_generated
-        #
-        # g_loss = l1_loss + const_loss + tv_loss + cheat_loss
+        d_loss = d_loss_real + d_loss_fake + d_loss_real_generated
 
-        d_loss = d_loss_real + d_loss_fake
-
-        g_loss = l1_loss + tv_loss
+        g_loss = l1_loss + const_loss + tv_loss + cheat_loss
 
         if no_target_source:
             # no_target source are examples that don't have the corresponding target images
@@ -482,7 +477,7 @@ class Font2Font(object):
             self.validate_model(val_batch_iter, ei, counter)
 
             # save checkpoints in each 50 epoch
-            if ei % 50 == 0:
+            if (ei + 1) % 50 == 0:
                 print("Checkpoint: save checkpoint epoch %d" % ei)
                 self.checkpoint(saver, counter)
 

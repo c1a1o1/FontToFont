@@ -477,7 +477,7 @@ class Font2Font(object):
             self.validate_model(val_batch_iter, ei, counter)
 
             # save checkpoints in each 50 epoch
-            if ei % 50 == 0:
+            if (ei + 1) % 50 == 0:
                 print("Checkpoint: save checkpoint epoch %d" % ei)
                 self.checkpoint(saver, counter)
 
