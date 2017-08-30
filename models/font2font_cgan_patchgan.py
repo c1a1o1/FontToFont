@@ -180,7 +180,7 @@ class Font2Font(object):
         # encoding constant loss
         # this loss assume that generated imaged and real image
         # should reside in the same space and close to each other
-        # encoded_fake_B = self.encoder(fake_B, is_training, reuse=True)[0]
+        encoded_fake_B = self.encoder(fake_B, is_training, reuse=True)[0]
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
 
 
