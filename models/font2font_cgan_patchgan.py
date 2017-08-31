@@ -18,7 +18,8 @@ from util.uitls import scale_back, merge, save_concat_images, save_image
 
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
-LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "cheat_loss", "tv_loss"])
+LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "cheat_loss", "tv_loss",
+                                       "d_loss_real", "d_loss_fake"])
 InputHandle = namedtuple("InputHandle", ["real_data", "no_target_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -248,7 +249,7 @@ class Font2Font(object):
         input_handle = InputHandle(real_data=real_data, no_target_data=no_target_data)
 
         loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, cheat_loss=cheat_loss,
-                                 l1_loss=l1_loss, tv_loss=tv_loss)
+                                 l1_loss=l1_loss, tv_loss=tv_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 
@@ -429,7 +430,10 @@ class Font2Font(object):
                 batch_images = batch
                 # Optimize D
 
-                _, batch_d_loss, d_summary = self.sess.run([d_optimizer, loss_handle.d_loss,
+                _, batch_d_loss, batch_d_loss_real, batch_d_loss_fake, d_summary = self.sess.run([d_optimizer,
+                                                            loss_handle.d_loss,
+                                                            loss_handle.d_loss_real,
+                                                            loss_handle.d_loss_fake,
                                                             summary_handle.d_merged],
                                                            feed_dict={real_data: batch_images,
                                                                       learning_rate: current_lr,
@@ -459,9 +463,10 @@ class Font2Font(object):
                                                                         })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
-                             "const_loss: %.5f, cheat_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f"
+                             "const_loss: %.5f, cheat_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f, d_loss_real: %.5f, " \
+                             "d_loss_fake: %.5f"
                 print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss,
-                                    const_loss, cheat_loss, l1_loss, tv_loss))
+                                    const_loss, cheat_loss, l1_loss, tv_loss, batch_d_loss_real, batch_d_loss_fake))
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
