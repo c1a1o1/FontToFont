@@ -346,6 +346,23 @@ class Font2Font(object):
         sample_img_path = os.path.join(model_sample_dir, "sample_%02d_%04d.png" % (epoch, step))
         misc.imsave(sample_img_path, merged_pair)
 
+    def validate_train_model(self, images, epoch, step):
+        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
+        print("Training set: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
+
+        merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
+        merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
+        merged_pair = np.concatenate([merged_real_images, merged_fake_images], axis=1)
+
+        model_id, _ = self.get_model_id_and_dir()
+
+        model_sample_dir = os.path.join(self.sample_dir, model_id)
+        if not os.path.exists(model_sample_dir):
+            os.makedirs(model_sample_dir)
+
+        sample_img_path = os.path.join(model_sample_dir, "training_sample_%02d_%04d.png" % (epoch, step))
+        misc.imsave(sample_img_path, merged_pair)
+
     def export_generator(self, save_dir, model_dir, model_name="gen_model"):
         saver = tf.train.Saver()
         self.restore_model(saver, model_dir)
@@ -403,6 +420,7 @@ class Font2Font(object):
         data_provider = TrainDataProvider(self.data_dir)
         total_batches = data_provider.compute_total_batch_num(self.batch_size)
         val_batch_iter = data_provider.get_val(size=self.batch_size)
+        train_batch_samples = data_provider.get_train_sample(size=self.batch_size)
 
         saver = tf.train.Saver(max_to_keep=3)
         summary_writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
@@ -480,6 +498,7 @@ class Font2Font(object):
 
             # validation in each epoch
             self.validate_model(val_batch_iter, ei, counter)
+            self.validate_train_model(train_batch_samples, ei, counter)
 
             # save checkpoints in each 50 epoch
             if (ei + 1) % 50 == 0:

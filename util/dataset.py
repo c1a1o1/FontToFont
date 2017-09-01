@@ -98,6 +98,16 @@ class TrainDataProvider(object):
             np.random.shuffle(val_examples)
         return get_batch_iter(val_examples, batch_size, augment=False)
 
+    def get_train_sample(self, size, shuffle=False):
+        train_samples = self.train.examples[:]
+        if shuffle:
+            np.random.shuffle(train_samples)
+
+        train_samples = train_samples[:size]
+        processed = [process(e, augment=False) for e in train_samples]
+
+        return np.array(processed).astype(np.float32)
+
     def get_val(self, size, shuffle=False):
         val_examples = self.val.examples[:]
 
