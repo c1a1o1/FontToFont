@@ -25,20 +25,20 @@ def bytes_to_file(bytes_img):
     return BytesIO(bytes_img)
 
 
-# def normalize_image(img):
-#     """
-#     Make image zero centered and in between (-1, 1)
-#     """
-#     normalized = (img / 127.5) - 1.
-#     return normalized
-
-# (0,1) -> (-1, 1)
 def normalize_image(img):
     """
     Make image zero centered and in between (-1, 1)
     """
-    normalized = (img * 2) - 1.
+    normalized = (img / 127.5) - 1.
     return normalized
+
+# (0,1) -> (-1, 1)
+# def normalize_image(img):
+#     """
+#     Make image zero centered and in between (-1, 1)
+#     """
+#     normalized = (img * 2) - 1.
+#     return normalized
 
 
 def read_split_image(img):
