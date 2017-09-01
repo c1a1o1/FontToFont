@@ -19,7 +19,7 @@ from util.uitls import scale_back, merge, save_concat_images, save_image
 # Auxiliary wrapper classes
 # Used to save handles(important nodes in computation graph) for later evaluation
 LossHandle = namedtuple("LossHandle", ["d_loss", "g_loss", "const_loss", "l1_loss", "cheat_loss", "tv_loss",
-                                       "d_loss_real", "d_loss_fake"])
+                                       "d_loss_real", "d_loss_fake", "ssim_loss"])
 InputHandle = namedtuple("InputHandle", ["real_data", "no_target_data"])
 EvalHandle = namedtuple("EvalHandle", ["encoder", "generator", "target", "source"])
 SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
@@ -188,7 +188,7 @@ class Font2Font(object):
         # l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
 
         # ssim loss !!
-        l1_loss =self.L1_penalty * (1 - tf_ssim(real_B, fake_B))
+        ssim_loss =self.L1_penalty * (1 - tf_ssim(real_B, fake_B))
 
         # total variation loss
         width = self.output_width
@@ -209,7 +209,8 @@ class Font2Font(object):
 
         d_loss = d_loss_real + d_loss_fake + d_loss_real_generated
 
-        g_loss = l1_loss + const_loss + tv_loss + cheat_loss
+        # g_loss = l1_loss + const_loss + tv_loss + cheat_loss + ssim_loss
+        g_loss = const_loss + tv_loss + cheat_loss + ssim_loss
 
         if no_target_source:
             # no_target source are examples that don't have the corresponding target images
@@ -236,23 +237,25 @@ class Font2Font(object):
                                                                                  labels=tf.ones_like(no_target_D)))
 
             d_loss = d_loss_real + d_loss_fake + d_loss_no_target
-            g_loss = cheat_loss / 2.0 + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
+            # g_loss = cheat_loss / 2.0 + l1_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
+            g_loss = cheat_loss / 2.0 + ssim_loss + (const_loss + no_target_const_loss) / 2.0 + tv_loss
 
-        l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
+        # l1_loss_summary = tf.summary.scalar("l1_loss", l1_loss)
+        ssim_loss_summary = tf.summary.scalar("ssim_loss", ssim_loss)
         const_loss_summary = tf.summary.scalar("const_loss", const_loss)
         cheat_loss_summary = tf.summary.scalar("cheat_loss", cheat_loss)
         d_loss_summary = tf.summary.scalar("d_loss", d_loss)
         g_loss_summary = tf.summary.scalar("g_loss", g_loss)
         tv_loss_summary = tf.summary.scalar("tv_loss", tv_loss)
         d_merged_summary = tf.summary.merge([d_loss_summary])
-        g_merged_summary = tf.summary.merge([cheat_loss_summary, l1_loss_summary, const_loss_summary, g_loss_summary,
+        g_merged_summary = tf.summary.merge([cheat_loss_summary, ssim_loss_summary, const_loss_summary, g_loss_summary,
                                              tv_loss_summary])
 
         # expose useful nodes in the graph as handles globally
         input_handle = InputHandle(real_data=real_data, no_target_data=no_target_data)
 
         loss_handle = LossHandle(d_loss=d_loss, g_loss=g_loss, const_loss=const_loss, cheat_loss=cheat_loss,
-                                 l1_loss=l1_loss, tv_loss=tv_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake)
+                                 ssim_loss=ssim_loss, tv_loss=tv_loss, d_loss_real=d_loss_real, d_loss_fake=d_loss_fake)
 
         eval_handle = EvalHandle(encoder=encoded_real_A, generator=fake_B, target=real_B, source=real_A)
 
@@ -321,20 +324,20 @@ class Font2Font(object):
     def generate_fake_samples(self, input_images):
         input_handle, loss_handle, eval_handle, summary_handle = self.retrieve_handles()
         fake_images, real_images, \
-        d_loss, g_loss, l1_loss = self.sess.run([eval_handle.generator,
+        d_loss, g_loss, ssim_loss = self.sess.run([eval_handle.generator,
                                                  eval_handle.target,
                                                  loss_handle.d_loss,
                                                  loss_handle.g_loss,
-                                                 loss_handle.l1_loss],
+                                                 loss_handle.ssim_loss],
                                                 feed_dict={
                                                     input_handle.real_data: input_images
                                                 })
-        return fake_images, real_images, d_loss, g_loss, l1_loss
+        return fake_images, real_images, d_loss, g_loss, ssim_loss
 
     def validate_model(self, images, epoch, step):
 
-        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Sample: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
+        fake_imgs, real_imgs, d_loss, g_loss, ssim_loss = self.generate_fake_samples(images)
+        print("Sample: d_loss: %.5f, g_loss: %.5f, ssim_loss: %.5f" % (d_loss, g_loss, ssim_loss))
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -350,8 +353,8 @@ class Font2Font(object):
         misc.imsave(sample_img_path, merged_pair)
 
     def validate_train_model(self, images, epoch, step):
-        fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(images)
-        print("Training set: d_loss: %.5f, g_loss: %.5f, l1_loss: %.5f" % (d_loss, g_loss, l1_loss))
+        fake_imgs, real_imgs, d_loss, g_loss, ssim_loss = self.generate_fake_samples(images)
+        print("Training set: d_loss: %.5f, g_loss: %.5f, ssim_loss: %.5f" % (d_loss, g_loss, ssim_loss))
 
         merged_fake_images = merge(scale_back(fake_imgs), [self.batch_size, 1])
         merged_real_images = merge(scale_back(real_imgs), [self.batch_size, 1])
@@ -471,11 +474,11 @@ class Font2Font(object):
                 # according to https://github.com/carpedm20/DCGAN-tensorflow
                 # collect all the losses along the way
                 _, batch_g_loss,  \
-                const_loss, cheat_loss, l1_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
+                const_loss, cheat_loss, ssim_loss, tv_loss, g_summary = self.sess.run([g_optimizer,
                                                                          loss_handle.g_loss,
                                                                          loss_handle.const_loss,
                                                                          loss_handle.cheat_loss,
-                                                                         loss_handle.l1_loss,
+                                                                         loss_handle.ssim_loss,
                                                                          loss_handle.tv_loss,
                                                                          summary_handle.g_merged],
                                                                         feed_dict={ real_data: batch_images,
@@ -484,10 +487,10 @@ class Font2Font(object):
                                                                         })
                 passed = time.time() - start_time
                 log_format = "Epoch: [%2d], [%4d/%4d] time: %4.4f, d_loss: %.5f, g_loss: %.5f, " + \
-                             "const_loss: %.5f, cheat_loss: %.5f, l1_loss: %.5f, tv_loss: %.5f, d_loss_real: %.5f, " \
+                             "const_loss: %.5f, cheat_loss: %.5f, ssim_loss: %.5f, tv_loss: %.5f, d_loss_real: %.5f, " \
                              "d_loss_fake: %.5f"
                 print(log_format % (ei, bid, total_batches, passed, batch_d_loss, batch_g_loss,
-                                    const_loss, cheat_loss, l1_loss, tv_loss, batch_d_loss_real, batch_d_loss_fake))
+                                    const_loss, cheat_loss, ssim_loss, tv_loss, batch_d_loss_real, batch_d_loss_fake))
                 summary_writer.add_summary(d_summary, counter)
                 summary_writer.add_summary(g_summary, counter)
 
@@ -554,7 +557,7 @@ class Font2Font(object):
         # batch_buffer = list()
 
         for source_imgs in source_iter:
-            fake_imgs, real_imgs, d_loss, g_loss, l1_loss = self.generate_fake_samples(source_imgs)
+            fake_imgs, real_imgs, d_loss, g_loss, ssim_loss = self.generate_fake_samples(source_imgs)
 
             img_shape = fake_imgs.shape
 
