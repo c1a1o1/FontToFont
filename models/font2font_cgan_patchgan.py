@@ -188,7 +188,7 @@ class Font2Font(object):
         # l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
 
         # ssim loss !!
-        l1_loss =self.L1_penalty * tf_ssim(fake_B, real_B)
+        l1_loss =self.L1_penalty * (1 - tf_ssim(real_B, fake_B))
 
         # total variation loss
         width = self.output_width
