@@ -12,7 +12,7 @@ from skimage.measure import compare_mse, compare_nrmse, compare_ssim, compare_ps
 from skimage.morphology import disk
 # from sklearn.neighbors.kde import KernelDensity
 from skimage.filters import threshold_otsu, rank
-from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm
+from util.ops import conv2d, deconv2d, lrelu, fc, batch_norm, tf_ssim
 from util.dataset import TrainDataProvider, InjectDataProvider
 from util.uitls import scale_back, merge, save_concat_images, save_image
 
@@ -185,7 +185,10 @@ class Font2Font(object):
         const_loss = (tf.reduce_mean(tf.square(encoded_real_A - encoded_fake_B))) * self.Lconst_penalty
 
         # L1 loss between real and generated images
-        l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
+        # l1_loss = self.L1_penalty * tf.reduce_mean(tf.abs(fake_B - real_B))
+
+        # ssim loss !!
+        l1_loss =self.L1_penalty * tf_ssim(fake_B, real_B)
 
         # total variation loss
         width = self.output_width
