@@ -27,8 +27,8 @@ SummaryHandle = namedtuple("SummaryHandle", ["d_merged", "g_merged"])
 
 class Font2Font(object):
     def __init__(self, experiment_dir=None, experiment_id=0, batch_size=16, input_width=256, output_width=256,
-                 generator_dim=64, discriminator_dim=64, L1_penalty=100, Lconst_penalty=15, Ltv_penalty=0.0,
-                 Lssim_penalty=100, input_filters=1, output_filters=1):
+                 generator_dim=64, discriminator_dim=64, L1_penalty=1.0, Lconst_penalty=0.15, Ltv_penalty=0.0,
+                 Lssim_penalty=1.0, input_filters=1, output_filters=1):
         self.experiment_dir = experiment_dir
         self.experiment_id = experiment_id
         self.batch_size = batch_size
