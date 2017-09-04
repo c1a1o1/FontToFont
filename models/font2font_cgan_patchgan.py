@@ -432,7 +432,7 @@ class Font2Font(object):
         val_batch_iter = data_provider.get_val(size=self.batch_size)
         train_batch_samples = data_provider.get_train_sample(size=self.batch_size)
 
-        saver = tf.train.Saver(max_to_keep=3)
+        saver = tf.train.Saver(max_to_keep=100)
         summary_writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
 
         if resume:
@@ -503,9 +503,9 @@ class Font2Font(object):
                 #     # sample the current model states with val data
                 #     self.validate_model(val_batch_iter, ei, counter)
 
-                if counter % checkpoint_steps == 0:
-                    print("Checkpoint: save checkpoint step %d" % counter)
-                    self.checkpoint(saver, counter)
+                # if counter % checkpoint_steps == 0:
+                #     print("Checkpoint: save checkpoint step %d" % counter)
+                #     self.checkpoint(saver, counter)
 
             # validation in each epoch
             self.validate_model(val_batch_iter, ei, counter)
