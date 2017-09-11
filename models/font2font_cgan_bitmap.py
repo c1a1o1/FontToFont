@@ -418,6 +418,7 @@ class Font2Font(object):
         for ei in range(epoch):
             train_batch_iter = data_provider.get_train_iter(self.batch_size)
 
+
             if (ei + 1) % schedule == 0:
                 update_lr = current_lr / 2.0
                 # minimum learning rate guarantee
